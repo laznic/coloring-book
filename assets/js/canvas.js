@@ -9,17 +9,32 @@ let isDrawing = false;
 let color = "black";
 let size = 5;
 let canvasSize = 512;
+let followingStopped = false;
 
 setCanvasSize();
 
-canvas.addEventListener("mousedown", start);
-canvas.addEventListener("mouseup", stop);
-canvas.addEventListener("mousemove", draw);
-canvas.addEventListener("mouseout", stop);
+canvas.addEventListener("mousedown", start(canvas, context));
+canvas.addEventListener("mouseup", stop(context));
+canvas.addEventListener("mousemove", draw(canvas, context));
+canvas.addEventListener("mouseout", stop(context));
+
+followingCanvas.addEventListener(
+  "mousedown",
+  start(followingCanvas, followingContext)
+);
+followingCanvas.addEventListener("mouseup", stop(followingContext));
+followingCanvas.addEventListener(
+  "mousemove",
+  draw(followingCanvas, followingContext)
+);
+followingCanvas.addEventListener("mouseout", stop(followingContext));
+followingCanvas.addEventListener("click", freezeCanvas);
 
 window.addEventListener("mousemove", setFollowingCanvasPosition);
 
 function setFollowingCanvasPosition(event) {
+  if (followingStopped) return;
+
   const { clientX, clientY } = event;
   const x = clientX - canvasSize / 2;
   const y = clientY - canvasSize / 2;
@@ -55,36 +70,47 @@ function changeSize(element) {
 }
 
 // Start drawing
-function start(event) {
-  isDrawing = true;
-  draw(event);
+function start(canvasEl, ctx) {
+  return function (event) {
+    isDrawing = true;
+    draw(canvasEl, ctx)(event);
+  };
 }
 
 // Stop drawing
-function stop() {
-  isDrawing = false;
-  context.beginPath();
+function stop(ctx) {
+  return function () {
+    isDrawing = false;
+    ctx.beginPath();
+  };
 }
 
 // Draw
-function draw(event) {
-  if (!isDrawing) return;
+function draw(canvasEl, ctx) {
+  return function (event) {
+    if (!isDrawing) return;
+    if (!followingStopped) return;
 
-  const { clientX, clientY } = event;
-  const { left, top } = canvas.getBoundingClientRect();
-  const x = clientX - left;
-  const y = clientY - top;
+    const { clientX, clientY } = event;
+    const { left, top } = canvasEl.getBoundingClientRect();
+    const x = clientX - left;
+    const y = clientY - top;
 
-  context.lineWidth = size * 2;
-  context.lineCap = "round";
-  context.strokeStyle = color;
-  context.lineTo(x, y);
-  context.stroke();
-  context.beginPath();
-  context.moveTo(x, y);
+    ctx.lineWidth = size * 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = color;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
 }
 
 function setCanvasSize() {
   canvas?.setAttribute("width", `512px`);
   canvas?.setAttribute("height", `512px`);
+}
+
+function freezeCanvas() {
+  followingStopped = true;
 }
