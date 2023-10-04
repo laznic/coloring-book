@@ -18,6 +18,8 @@ defmodule ColoringBookWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/canvas", CanvasLive, :index
   end
 
   # Other scopes may use custom stacks.
