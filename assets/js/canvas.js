@@ -2,6 +2,8 @@ import { fabric } from "fabric";
 
 export default {
   mounted() {
+    this.handleEvent("generated_image_prompt", console.log);
+
     const canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
       selection: false,
@@ -61,12 +63,17 @@ export default {
 
     followingCanvas.on("mouse:down", freezeCanvas);
 
-    followingCanvas.on("path:created", function () {
+    followingCanvas.on("path:created", () => {
       const dataURL = followingCanvas.toDataURL();
       const canvasEl = followingCanvas.getElement();
       const coords = canvasEl.parentElement.getBoundingClientRect();
       const canvasCoords = canvas.calcViewportBoundaries();
 
+      this.pushEvent("send_drawing", { drawing: dataURL });
+      // this.pushEvent("store_canvas_location", {
+      //   top: coords.top + canvasCoords.tl.y,
+      //   left: coords.left + canvasCoords.tl.x,
+      // });
       // Store canvas location in database
       // Send dataURL to img2prompt (phx event?)
       // render placeholder/loader image on canvas
