@@ -23,7 +23,7 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   defp gen_image_prompt(drawing) do
-    prompt = Replicate.run(@img2prompt_model, %{ image: drawing, clip_model_name: "ViT-bigG-14/laion2b_s39b_b160k" })
-    %{prompt: prompt |> String.replace("\n", "") |> String.trim()}
+    prompt = Replicate.run(@img2prompt_model, %{ image: drawing, mode "classic", clip_model_name: "ViT-H-14/laion2b_s32b_b79k" })
+    %{prompt: prompt}
   end
 end
