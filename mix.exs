@@ -58,6 +58,7 @@ defmodule ColoringBook.MixProject do
       {:ash_authentication_phoenix, "~> 1.7"},
       {:oban, "~> 2.15"},
       {:req, "~> 0.4.2"},
+      {:replicate, "~> 1.1.1"}
     ]
   end
 
