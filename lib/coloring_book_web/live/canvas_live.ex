@@ -1,7 +1,7 @@
 defmodule ColoringBookWeb.CanvasLive do
   use ColoringBookWeb, :live_view
 
-  @img2prompt_model "methexis-inc/img2prompt:50adaf2d3ad20a6f911a8a9e3ccf777b263b8596fbd2c8fc26e8888f8a0edbb5"
+  @img2prompt_model "pharmapsychotic/clip-interrogator:8151e1c9f47e696fa316146a2e35812ccf79cfc9eba05b11c7f450155102af70"
 
   def mount(params, _session, socket) do
     {:ok, assign(socket, canvas: %{})}
@@ -23,7 +23,7 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   defp gen_image_prompt(drawing) do
-    prompt = Replicate.run(@img2prompt_model, %{ image: drawing })
+    prompt = Replicate.run(@img2prompt_model, %{ image: drawing, clip_model_name: "ViT-bigG-14/laion2b_s39b_b160k" })
     %{prompt: prompt |> String.replace("\n", "") |> String.trim()}
   end
 end
