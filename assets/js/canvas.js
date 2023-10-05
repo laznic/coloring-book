@@ -169,9 +169,9 @@ export default {
 
           const rect = new fabric.Rect({
             ...rectPosition,
-            fill: "white",
+            fill: "black",
             selectable: false,
-            shadow: "rgba(255,255,255,1) 0px 0px 10px",
+            shadow: "rgba(0,0,0,1) 0px 0px 10px",
           });
 
           const background = new fabric.Rect({
@@ -179,7 +179,7 @@ export default {
             width: 513,
             top: coords.top + canvasCoords.tl.y - 1,
             left: coords.left + canvasCoords.tl.x - 1,
-            fill: "black",
+            fill: "white",
             selectable: false,
           });
 
