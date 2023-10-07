@@ -40,8 +40,8 @@ export default {
 
       this.pushEvent(eventName, {
         prompt,
-        image: baseImage.replace("data:image/png;base64,", ""),
-        mask: currentMask.replace("data:image/png;base64,", ""),
+        image: baseImage,
+        mask: currentMask,
         coords: {
           top: coords.top,
           left: coords.left,

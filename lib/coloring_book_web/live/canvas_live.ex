@@ -70,8 +70,8 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   defp gen_image(prompt, coords, base_image, mask) do
-    File.write!("./init_image.png", Base.decode64!(base_image))
-    File.write!("./mask.png", Base.decode64!(mask))
+    File.write!("./init_image.png", String.replace(base_image, "data:image/png;base64,", "") |> Base.decode64!())
+    File.write!("./mask.png", String.replace(mask, "data:image/png;base64,", "") |> Base.decode64!())
 
     multipart = Multipart.new()
       |> Multipart.add_part(Multipart.Part.text_field(prompt, "text_prompts[0][text]"))
@@ -92,6 +92,8 @@ defmodule ColoringBookWeb.CanvasLive do
       |> Req.Request.put_header("content-type", content_type)
 
     res = Req.post!(req, url: "/generation/stable-inpainting-512-v2-0/image-to-image/masking", body: body_stream)
+
+    IO.inspect(res.body)
 
     %{image: "data:image/png;base64,#{res.body["artifacts"] |> Enum.at(0) |> Map.get("base64")}", coords: coords}
   end
