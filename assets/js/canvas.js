@@ -2,7 +2,77 @@ import { fabric } from "fabric";
 
 export default {
   mounted() {
-    this.handleEvent("generated_image_prompt", console.log);
+    let currentMask = null;
+    let firstGeneration = true;
+    // Because we cannot export tainted canvas so just convert to Base64 for now
+    async function getBase64ImageFromUrl(imageUrl) {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener(
+          "load",
+          function () {
+            resolve(reader.result);
+          },
+          false
+        );
+
+        reader.onerror = () => {
+          return reject(this);
+        };
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    this.handleEvent("generated_image_prompt", ({ prompt, coords }) => {
+      const baseImage = canvas.toDataURL({
+        height: 512,
+        width: 512,
+        top: coords.top,
+        left: coords.left,
+      });
+
+      const eventName = firstGeneration
+        ? "start_initial_image_generation"
+        : "start_inpainting";
+
+      this.pushEvent(eventName, {
+        prompt,
+        image: baseImage.replace("data:image/png;base64,", ""),
+        mask: currentMask.replace("data:image/png;base64,", ""),
+        coords: {
+          top: coords.top,
+          left: coords.left,
+        },
+      });
+    });
+
+    this.handleEvent("generated_image", ({ image, coords }) => {
+      getBase64ImageFromUrl(image)
+        .then((result) => {
+          fabric.Image.fromURL(result, function (oImg) {
+            // The first generation is 1024x1024 while inpainting produces 512x512 images
+            if (firstGeneration) {
+              oImg.scale(0.5);
+            }
+
+            canvas.add(
+              oImg.set({
+                top: coords.top,
+                left: coords.left,
+              })
+            );
+
+            const rectangles = canvas.getObjects("rect");
+            canvas.remove(rectangles);
+
+            firstGeneration = false;
+          });
+        })
+        .catch((err) => console.error(err));
+    });
 
     const canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
@@ -65,31 +135,25 @@ export default {
 
     followingCanvas.on("path:created", () => {
       const dataURL = followingCanvas.toDataURL();
+
+      followingCanvas.setBackgroundColor("#ffcc00");
       const canvasEl = followingCanvas.getElement();
       const coords = canvasEl.parentElement.getBoundingClientRect();
       const canvasCoords = canvas.calcViewportBoundaries();
 
-      this.pushEvent("send_drawing", { drawing: dataURL });
-      // this.pushEvent("store_canvas_location", {
-      //   top: coords.top + canvasCoords.tl.y,
-      //   left: coords.left + canvasCoords.tl.x,
-      // });
-      // Store canvas location in database
-      // Send dataURL to img2prompt (phx event?)
-      // render placeholder/loader image on canvas
-      // Send received prompt to Stable Diffusion APIs
+      const originalDrawing = followingCanvas.toDataURL();
+
+      this.pushEvent("send_drawing", {
+        drawing: originalDrawing,
+        coords: {
+          top: coords.top + canvasCoords.tl.y,
+          left: coords.left + canvasCoords.tl.x,
+        },
+      });
+
+      followingCanvas.setBackgroundColor("transparent");
 
       fabric.Image.fromURL(dataURL, function (oImg) {
-        // const brightness = new fabric.Image.filters.BlackWhite();
-        // // const invert = new fabric.Image.filters.Invert();
-        // const contrast = new fabric.Image.filters.Contrast({ contrast: 5 });
-        // const blur = new fabric.Image.filters.Blur({ blur: 0.5 });
-        // oImg.filters.push(brightness);
-        // // oImg.filters.push(invert);
-        // oImg.filters.push(contrast);
-        // oImg.filters.push(blur);
-        // oImg.applyFilters();
-
         canvas.add(
           oImg.set({
             top: coords.top + canvasCoords.tl.y,
@@ -97,18 +161,6 @@ export default {
             selectable: false,
           })
         );
-
-        // Get source image
-        const img = canvas.toDataURL({
-          height: 512,
-          width: 512,
-          top: coords.top + canvasCoords.tl.y,
-          left: coords.left + canvasCoords.tl.x,
-        });
-
-        canvas.renderAll();
-
-        console.log(img);
 
         const allImages = canvas.getObjects("image");
         let intersectingObjects = [];
@@ -121,6 +173,17 @@ export default {
           }
         }
 
+        const background = new fabric.Rect({
+          height: 512,
+          width: 512,
+          top: coords.top + canvasCoords.tl.y + 1,
+          left: coords.left + canvasCoords.tl.x + 1,
+          fill: "white",
+          selectable: false,
+        });
+
+        canvas.add(background);
+
         intersectingObjects.forEach((obj) => {
           const { bl, tl, br, tr } = obj.lineCoords;
 
@@ -131,30 +194,30 @@ export default {
 
           const bottomLeftInside = {
             top: oImg.lineCoords.tr.y,
-            left: bl.x,
-            width: oImg.lineCoords.tr.x - bl.x,
-            height: bl.y - oImg.lineCoords.tr.y,
+            left: oImg.lineCoords.tr.x - Math.abs(oImg.lineCoords.tr.x - bl.x),
+            width: Math.abs(oImg.lineCoords.tr.x - bl.x),
+            height: Math.abs(oImg.lineCoords.tr.y - bl.y),
           };
 
           const bottomRightInside = {
             top: oImg.lineCoords.tl.y,
-            left: br.x,
-            width: oImg.lineCoords.tl.x - br.x,
-            height: br.y - oImg.lineCoords.tl.y,
+            left: oImg.lineCoords.tl.x,
+            width: Math.abs(oImg.lineCoords.tl.x - br.x),
+            height: Math.abs(oImg.lineCoords.tl.y - br.y),
           };
 
           const topLeftInside = {
-            top: oImg.lineCoords.br.y,
-            left: tl.x,
-            width: oImg.lineCoords.br.x - tl.x,
-            height: tl.y - oImg.lineCoords.br.y,
+            top: oImg.lineCoords.br.y - Math.abs(oImg.lineCoords.br.y - tl.y),
+            left: oImg.lineCoords.br.x - Math.abs(oImg.lineCoords.br.x - tl.x),
+            width: Math.abs(oImg.lineCoords.br.x - tl.x),
+            height: Math.abs(oImg.lineCoords.br.y - tl.y),
           };
 
           const topRightInside = {
-            top: oImg.lineCoords.bl.y,
-            left: tr.x,
-            width: oImg.lineCoords.bl.x - tr.x,
-            height: tr.y - oImg.lineCoords.bl.y,
+            top: oImg.lineCoords.bl.y - Math.abs(oImg.lineCoords.bl.y - tr.y),
+            left: oImg.lineCoords.bl.x,
+            width: Math.abs(oImg.lineCoords.bl.x - tr.x),
+            height: Math.abs(oImg.lineCoords.bl.y - tr.y),
           };
 
           const rectPosition = isTopLeftInside
@@ -171,19 +234,8 @@ export default {
             ...rectPosition,
             fill: "black",
             selectable: false,
-            shadow: "rgba(0,0,0,1) 0px 0px 10px",
           });
 
-          const background = new fabric.Rect({
-            height: 513,
-            width: 513,
-            top: coords.top + canvasCoords.tl.y - 1,
-            left: coords.left + canvasCoords.tl.x - 1,
-            fill: "white",
-            selectable: false,
-          });
-
-          canvas.add(background);
           canvas.add(rect);
         });
 
@@ -195,20 +247,14 @@ export default {
           left: coords.left + canvasCoords.tl.x,
         });
 
-        fabric.Image.fromURL(mask, function (maskImage) {
-          const blur = new fabric.Image.filters.Blur({ blur: 0.5 });
-          // // const brightness = new fabric.Image.filters.BlackWhite();
-          maskImage.filters.push(blur);
-          // // maskImage.filters.push(brightness);
-          maskImage.applyFilters();
-          console.log(maskImage.toDataURL());
-        });
+        currentMask = mask;
 
-        // console.log(oImg.toDataURL());
+        canvas.remove(mask);
+        canvas.remove(background);
+        const rectangles = canvas.getObjects("rect");
+        canvas.remove(...rectangles);
+        canvas.remove(oImg);
       });
-
-      const rectangles = canvas.getObjects("rect");
-      canvas.remove(rectangles);
 
       followingCanvas.clear();
       followingStopped = false;
