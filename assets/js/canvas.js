@@ -8,6 +8,7 @@ export default {
     this.followingRect = null;
     this.maskCoords = {};
     this.lockPanAndZoom = false;
+    this.currentBackgroundColor = "#000";
 
     this.handleEvent(
       "render_initial_generations",
@@ -23,6 +24,13 @@ export default {
       this.renderGeneratedImageOnCanvas.bind(this)
     );
 
+    this.handleEvent("selected_color", this.handleSelectedColor.bind(this));
+    this.handleEvent("selected_size", this.handleSelectedSize.bind(this));
+    this.handleEvent(
+      "selected_background_color",
+      this.handleSelectedBackgroundColor.bind(this)
+    );
+
     this.canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
       selection: false,
@@ -33,7 +41,6 @@ export default {
 
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
-    canvas.freeDrawingBrush.width = 10;
 
     let lastPosX = null;
     let lastPosY = null;
@@ -143,7 +150,8 @@ export default {
     let canvasSize = 512;
     let followingStopped = false;
 
-    const followingCanvas = new fabric.Canvas("following-canvas");
+    this.followingCanvas = new fabric.Canvas("following-canvas");
+    const followingCanvas = this.followingCanvas;
 
     followingCanvas.setWidth(canvasSize);
     followingCanvas.setHeight(canvasSize);
@@ -158,7 +166,7 @@ export default {
 
       const dataURL = followingCanvas.toDataURL();
 
-      followingCanvas.setBackgroundColor("#ffcc00");
+      followingCanvas.setBackgroundColor(this.currentBackgroundColor);
       const canvasEl = followingCanvas.getElement();
       const coords = canvasEl.parentElement.getBoundingClientRect();
       const canvasCoords = canvas.calcViewportBoundaries();
@@ -492,6 +500,20 @@ export default {
         });
       })
       .catch((err) => console.error(err));
+  },
+  handleSelectedColor({ color }) {
+    this.followingCanvas.freeDrawingBrush.color = color;
+  },
+  handleSelectedSize({ size }) {
+    this.followingCanvas.freeDrawingBrush.width = size;
+  },
+  handleSelectedBackgroundColor({ color }) {
+    this.currentBackgroundColor = color;
+    const followingCanvasWrapper = document.getElementById(
+      "following-canvas-wrapper"
+    );
+
+    followingCanvasWrapper.style.borderColor = color;
   },
 };
 

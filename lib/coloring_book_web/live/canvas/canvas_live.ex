@@ -9,7 +9,7 @@ defmodule ColoringBookWeb.CanvasLive do
   @sd_api_url "https://api.stability.ai/v1"
 
   def mount(params, _session, socket) do
-    {:ok, socket}
+    {:ok, socket |> assign(color: "#fff") |> assign(size: "10") |> assign(background: "#000")}
   end
 
   @impl true
@@ -49,6 +49,21 @@ defmodule ColoringBookWeb.CanvasLive do
     end)
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_color", %{"color" => color}, socket) do
+    {:noreply, socket |> assign(color: color) |> push_event("selected_color", %{ color: color })}
+  end
+
+  @impl true
+  def handle_event("select_size", %{"size" => size}, socket) do
+    {:noreply, socket |> push_event("selected_size", %{ size: size })}
+  end
+
+  @impl true
+  def handle_event("select_background_color", %{"background" => background}, socket) do
+    {:noreply, socket |> push_event("selected_background_color", %{ color: background })}
   end
 
   @impl true
