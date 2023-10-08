@@ -4,6 +4,7 @@ export default {
   mounted() {
     this.currentMask = null;
     this.isMasking = false;
+    this.canDrag = false;
 
     this.handleEvent(
       "render_initial_generations",
@@ -34,18 +35,23 @@ export default {
     let lastPosX = null;
     let lastPosY = null;
 
-    canvas.on("mouse:down", function (opt) {
+    canvas.on("mouse:down", (opt) => {
       const evt = opt.e;
 
-      if (evt.altKey) {
+      if (this.canDrag) {
         canvas.isDragging = true;
 
         lastPosX = evt.clientX;
         lastPosY = evt.clientY;
       }
     });
-    canvas.on("mouse:move", function (opt) {
+    canvas.on("mouse:move", (opt) => {
+      if (this.canDrag) {
+        canvas.setCursor("grab");
+      }
+
       if (canvas.isDragging) {
+        canvas.setCursor("grabbing");
         const e = opt.e;
         const vpt = canvas.viewportTransform;
         vpt[4] += e.clientX - lastPosX;
@@ -55,7 +61,8 @@ export default {
         lastPosY = e.clientY;
       }
     });
-    canvas.on("mouse:up", function (opt) {
+
+    canvas.on("mouse:up", (opt) => {
       if (canvas.isDragging) {
         // on mouse up we want to recalculate new interaction
         // for all objects, so we call setViewportTransform
@@ -237,7 +244,24 @@ export default {
     // followingCanvas.addEventListener("mouseout", stop(followingContext));
     // followingCanvas.addEventListener("click", freezeCanvas);
 
+    canvas.on("mouse:wheel", function (opt) {
+      const deltaY = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+
+      zoom *= 0.999 ** deltaY;
+
+      if (zoom > 1.5) zoom = 1.5;
+      if (zoom < 0.2) zoom = 0.2;
+
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    });
+
     window.addEventListener("mousemove", setFollowingCanvasPosition);
+    window.addEventListener("keydown", enableDrag.bind(this));
+    window.addEventListener("keyup", enableDrag.bind(this));
 
     function setFollowingCanvasPosition(event) {
       if (followingStopped) return;
@@ -252,8 +276,16 @@ export default {
     }
 
     function freezeCanvas() {
+      if (this.canDrag) return;
+
       followingStopped = true;
       followingCanvas.isDrawingMode = true;
+    }
+
+    function enableDrag(event) {
+      if (event.code !== "Space" && event.key !== " ") return;
+
+      this.canDrag = event.type === "keydown" ? true : false;
     }
   },
   // Because we cannot export tainted canvas so just convert to Base64 for now
@@ -291,6 +323,7 @@ export default {
               oImg.set({
                 top: generation.top,
                 left: generation.left,
+                selectable: false,
               })
             );
           });
@@ -333,6 +366,7 @@ export default {
             oImg.set({
               top: coords.top,
               left: coords.left,
+              selectable: false,
             })
           );
 
