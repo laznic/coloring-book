@@ -11,7 +11,7 @@ defmodule ColoringBook.Application do
       # Start the Telemetry supervisor
       ColoringBookWeb.Telemetry,
       # Start the Ecto repository
-      # ColoringBook.Repo,
+      ColoringBook.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: ColoringBook.PubSub},
       # Start Finch
