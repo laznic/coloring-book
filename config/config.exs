@@ -9,7 +9,7 @@ import Config
 
 config :coloring_book,
   ecto_repos: [ColoringBook.Repo],
-  ash_apis: []
+  ash_apis: [ColoringBook.Canvases]
 
 # Configures the endpoint
 config :coloring_book, ColoringBookWeb.Endpoint,
