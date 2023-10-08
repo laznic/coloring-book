@@ -43,7 +43,7 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   @impl true
-  def handle_event("start_inpainting", %{"prompt" => prompt, "coords" => coords, "image" => image, "mask" => mask}, socket) do
+  def handle_event("start_inpainting", %{"image" => image, "mask" => mask}, socket) do
     Task.async(fn ->
       gen_image(socket.assigns.generation_id, image, mask)
     end)
@@ -121,7 +121,14 @@ defmodule ColoringBookWeb.CanvasLive do
       |> Req.Request.put_header("authorization", "Bearer #{System.get_env("STABILITY_AI_TOKEN")}")
       |> Req.Request.put_header("content-type", content_type)
 
-    res = Req.post!(req, url: "/generation/stable-inpainting-512-v2-0/image-to-image/masking", body: body_stream)
+    case Req.post(req, url: "/generation/stable-inpainting-512-v2-0/image-to-image/masking", body: body_stream) do
+      {:ok, res} -> handle_inpainting_response(res, generation)
+      {:error, _reason} -> %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+    end
+  end
+
+  @impl true
+  defp handle_inpainting_response(res, generation) do
     image_base64 = res.body["artifacts"] |> Enum.at(0) |> Map.get("base64")
 
     multipart = Multipart.new()
