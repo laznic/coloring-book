@@ -101,7 +101,7 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   defp gen_image(generation_id, base_image, mask) do
-    generation = Artwork.Generation.get_by_id!(generation_id)
+    generation = Artwork.Generation.get_by_id!(generation_id, load: [:canvas])
 
     multipart = Multipart.new()
       |> Multipart.add_part(Multipart.Part.text_field(generation.prompt, "text_prompts[0][text]"))
@@ -125,7 +125,7 @@ defmodule ColoringBookWeb.CanvasLive do
     image_base64 = res.body["artifacts"] |> Enum.at(0) |> Map.get("base64")
 
     multipart = Multipart.new()
-      |> Multipart.add_part(Multipart.Part.file_content_field("generated_image.png", Base.decode64!(image_base64), :generated_image))
+      |> Multipart.add_part(Multipart.Part.file_content_field("#{generation.id}.jpeg", Base.decode64!(image_base64), :generated_image))
 
     body_stream = Multipart.body_stream(multipart)
     content_type = Multipart.content_type(multipart, "multipart/form-data")
@@ -135,7 +135,7 @@ defmodule ColoringBookWeb.CanvasLive do
       |> Req.Request.put_header("authorization", "Bearer #{System.get_env("SUPABASE_SERVICE_KEY")}")
       |> Req.Request.put_header("content-type", content_type)
 
-    upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation.id}/generated_image.png", body: body_stream)
+    upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation.canvas.id}/#{generation.id}.jpeg", body: body_stream)
     generated_image_url = "#{System.get_env("SUPABASE_URL")}/storage/v1/object/public/#{upload_res.body["Key"]}"
 
     Artwork.Generation.update!(generation, %{
