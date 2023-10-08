@@ -59,7 +59,7 @@ defmodule ColoringBook.MixProject do
       {:oban, "~> 2.15"},
       {:req, "~> 0.4.2"},
       {:replicate, "~> 1.1.1"},
-      {:multipart, "~> 0.3.0"}
+      {:multipart, "~> 0.4.0"}
     ]
   end
 
