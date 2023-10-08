@@ -25,4 +25,8 @@ defmodule ColoringBook.Artwork.Canvas do
     create_timestamp :created_at
     update_timestamp :updated_at
   end
+
+  relationships do
+    has_many :generations, ColoringBook.Artwork.Generation
+  end
 end

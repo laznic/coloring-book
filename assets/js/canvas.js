@@ -2,83 +2,30 @@ import { fabric } from "fabric";
 
 export default {
   mounted() {
-    let currentMask = null;
-    let firstGeneration = true;
-    // Because we cannot export tainted canvas so just convert to Base64 for now
-    async function getBase64ImageFromUrl(imageUrl) {
-      const res = await fetch(imageUrl);
-      const blob = await res.blob();
+    this.currentMask = null;
+    this.isMasking = false;
 
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.addEventListener(
-          "load",
-          function () {
-            resolve(reader.result);
-          },
-          false
-        );
+    this.handleEvent(
+      "render_initial_generations",
+      this.renderInitialGenerationsOnCanvas.bind(this)
+    );
 
-        reader.onerror = () => {
-          return reject(this);
-        };
-        reader.readAsDataURL(blob);
-      });
-    }
+    this.handleEvent(
+      "generated_image_prompt",
+      this.handleImagePrompt.bind(this)
+    );
+    this.handleEvent(
+      "generated_image",
+      this.renderGeneratedImageOnCanvas.bind(this)
+    );
 
-    this.handleEvent("generated_image_prompt", ({ prompt, coords }) => {
-      const baseImage = canvas.toDataURL({
-        height: 512,
-        width: 512,
-        top: coords.top,
-        left: coords.left,
-      });
-
-      const eventName = firstGeneration
-        ? "start_initial_image_generation"
-        : "start_inpainting";
-
-      this.pushEvent(eventName, {
-        prompt,
-        image: baseImage,
-        mask: currentMask,
-        coords: {
-          top: coords.top,
-          left: coords.left,
-        },
-      });
-    });
-
-    this.handleEvent("generated_image", ({ image, coords }) => {
-      getBase64ImageFromUrl(image)
-        .then((result) => {
-          fabric.Image.fromURL(result, function (oImg) {
-            // The first generation is 1024x1024 while inpainting produces 512x512 images
-            if (firstGeneration) {
-              oImg.scale(0.5);
-            }
-
-            canvas.add(
-              oImg.set({
-                top: coords.top,
-                left: coords.left,
-              })
-            );
-
-            const rectangles = canvas.getObjects("rect");
-            canvas.remove(rectangles);
-
-            firstGeneration = false;
-          });
-        })
-        .catch((err) => console.error(err));
-    });
-
-    const canvas = new fabric.Canvas("canvas", {
+    this.canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
       selection: false,
       backgroundColor: "#808080",
     });
+
+    const canvas = this.canvas;
 
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
@@ -153,7 +100,7 @@ export default {
 
       followingCanvas.setBackgroundColor("transparent");
 
-      fabric.Image.fromURL(dataURL, function (oImg) {
+      fabric.Image.fromURL(dataURL, (oImg) => {
         canvas.add(
           oImg.set({
             top: coords.top + canvasCoords.tl.y,
@@ -172,6 +119,8 @@ export default {
             intersectingObjects.push(allImages[i]);
           }
         }
+
+        if (intersectingObjects.length > 0) this.isMasking = true;
 
         const background = new fabric.Rect({
           height: 512,
@@ -247,7 +196,7 @@ export default {
           left: coords.left + canvasCoords.tl.x,
         });
 
-        currentMask = mask;
+        this.currentMask = mask;
 
         canvas.remove(mask);
         canvas.remove(background);
@@ -306,6 +255,92 @@ export default {
       followingStopped = true;
       followingCanvas.isDrawingMode = true;
     }
+  },
+  // Because we cannot export tainted canvas so just convert to Base64 for now
+  async getBase64ImageFromUrl(imageUrl) {
+    const res = await fetch(imageUrl);
+    const blob = await res.blob();
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener(
+        "load",
+        function () {
+          resolve(reader.result);
+        },
+        false
+      );
+
+      reader.onerror = () => {
+        return reject(this);
+      };
+      reader.readAsDataURL(blob);
+    });
+  },
+
+  renderInitialGenerationsOnCanvas({ generations }) {
+    for (const generation of generations) {
+      if (!generation.image_url) continue;
+
+      this.getBase64ImageFromUrl(generation.image_url)
+        .then((result) => {
+          fabric.Image.fromURL(result, (oImg) => {
+            if (generation.image_url.includes("replicate")) oImg.scale(0.5);
+
+            this.canvas.add(
+              oImg.set({
+                top: generation.top,
+                left: generation.left,
+              })
+            );
+          });
+        })
+        .catch((err) => console.error(err));
+    }
+  },
+  handleImagePrompt({ prompt, coords }) {
+    const baseImage = this.canvas.toDataURL({
+      height: 512,
+      width: 512,
+      top: coords.top,
+      left: coords.left,
+    });
+
+    const eventName = !this.isMasking
+      ? "start_initial_image_generation"
+      : "start_inpainting";
+
+    this.pushEvent(eventName, {
+      prompt,
+      image: baseImage,
+      mask: this.currentMask,
+      coords: {
+        top: coords.top,
+        left: coords.left,
+      },
+    });
+  },
+  renderGeneratedImageOnCanvas({ image, coords }) {
+    this.getBase64ImageFromUrl(image)
+      .then((result) => {
+        fabric.Image.fromURL(result, (oImg) => {
+          // The first generation is 1024x1024 while inpainting produces 512x512 images
+          if (!this.isMasking) {
+            oImg.scale(0.5);
+          }
+
+          this.canvas.add(
+            oImg.set({
+              top: coords.top,
+              left: coords.left,
+            })
+          );
+
+          const rectangles = this.canvas.getObjects("rect");
+          this.canvas.remove(rectangles);
+        });
+      })
+      .catch((err) => console.error(err));
   },
 };
 

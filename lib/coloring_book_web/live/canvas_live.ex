@@ -9,9 +9,19 @@ defmodule ColoringBookWeb.CanvasLive do
   @sd_api_url "https://api.stability.ai/v1"
 
   def mount(params, _session, socket) do
-    new_canvas = Artwork.Canvas.create!()
+    {:ok, socket}
+  end
 
-    {:ok, assign(socket, canvas_id: new_canvas.id)}
+  @impl true
+  def handle_params(%{"id" => id}, _, socket) do
+    canvas = Artwork.Canvas.get_by_id!(id, load: [:generations])
+    generations = canvas.generations |> Enum.map(&%{ prompt: &1.prompt, image_url: &1.image_url, top: &1.top, left: &1.left })
+
+    {:noreply,
+     socket
+     |> assign(:canvas_id, canvas.id)
+     |> push_event("render_initial_generations", %{ generations: generations })
+    }
   end
 
   @impl true
@@ -45,7 +55,11 @@ defmodule ColoringBookWeb.CanvasLive do
   def handle_info({ref, %{prompt: prompt, coords: coords, generation_id: generation_id}}, socket) do
     Process.demonitor(ref, [:flush])
 
-    {:noreply, assign(socket, generation_id: generation_id) |> push_event("generated_image_prompt", %{ prompt: prompt, coords: coords })}
+    {:noreply,
+      socket
+      |> assign(generation_id: generation_id)
+      |> push_event("generated_image_prompt", %{ prompt: prompt, coords: coords })
+    }
   end
 
   @impl true
@@ -118,10 +132,10 @@ defmodule ColoringBookWeb.CanvasLive do
 
     req = Req.new(base_url: System.get_env("SUPABASE_URL"))
       |> Req.Request.put_header("accept", "application/json")
-      |> Req.Request.put_header("authorization", "Bearer #{System.get_env("SUPABASE_SERVICE_KEY")}}")
+      |> Req.Request.put_header("authorization", "Bearer #{System.get_env("SUPABASE_SERVICE_KEY")}")
       |> Req.Request.put_header("content-type", content_type)
 
-    upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation_id}/generated_image.png", body: body_stream)
+    upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation.id}/generated_image.png", body: body_stream)
     generated_image_url = "#{System.get_env("SUPABASE_URL")}/storage/v1/object/public/#{upload_res.body["Key"]}"
 
     Artwork.Generation.update!(generation, %{
