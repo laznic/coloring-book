@@ -9,7 +9,7 @@ defmodule ColoringBookWeb.CanvasLive do
   @sd_api_url "https://api.stability.ai/v1"
 
   def mount(params, _session, socket) do
-    {:ok, socket |> assign(color: "#fff") |> assign(size: "10") |> assign(background: "#000")}
+    {:ok, socket |> assign(color: "#fff") |> assign(background: "#000") |> assign(no_drawings: true)}
   end
 
   @impl true
@@ -57,13 +57,18 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   @impl true
-  def handle_event("select_size", %{"size" => size}, socket) do
-    {:noreply, socket |> push_event("selected_size", %{ size: size })}
+  def handle_event("select_background_color", %{"background" => background}, socket) do
+    {:noreply, socket |> assign(background: background) |> push_event("selected_background_color", %{ color: background })}
   end
 
   @impl true
-  def handle_event("select_background_color", %{"background" => background}, socket) do
-    {:noreply, socket |> push_event("selected_background_color", %{ color: background })}
+  def handle_event("can_accept_drawing", _params, socket) do
+    {:noreply, socket |> assign(no_drawings: false)}
+  end
+
+  @impl true
+  def handle_event("accept_drawing", _params, socket) do
+    {:noreply, socket |> push_event("accepted_drawing", %{})}
   end
 
   @impl true
@@ -144,26 +149,31 @@ defmodule ColoringBookWeb.CanvasLive do
 
   @impl true
   defp handle_inpainting_response(res, generation) do
-    image_base64 = res.body["artifacts"] |> Enum.at(0) |> Map.get("base64")
+    case res.body["artifacts"] do
+      nil -> %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+      [] -> %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+      artifacts ->
+        image_base64 = artifacts |> Enum.at(0) |> Map.get("base64")
 
-    multipart = Multipart.new()
-      |> Multipart.add_part(Multipart.Part.file_content_field("#{generation.id}.jpeg", Base.decode64!(image_base64), :generated_image))
+        multipart = Multipart.new()
+          |> Multipart.add_part(Multipart.Part.file_content_field("#{generation.id}.jpeg", Base.decode64!(image_base64), :generated_image))
 
-    body_stream = Multipart.body_stream(multipart)
-    content_type = Multipart.content_type(multipart, "multipart/form-data")
+        body_stream = Multipart.body_stream(multipart)
+        content_type = Multipart.content_type(multipart, "multipart/form-data")
 
-    req = Req.new(base_url: System.get_env("SUPABASE_URL"))
-      |> Req.Request.put_header("accept", "application/json")
-      |> Req.Request.put_header("authorization", "Bearer #{System.get_env("SUPABASE_SERVICE_KEY")}")
-      |> Req.Request.put_header("content-type", content_type)
+        req = Req.new(base_url: System.get_env("SUPABASE_URL"))
+          |> Req.Request.put_header("accept", "application/json")
+          |> Req.Request.put_header("authorization", "Bearer #{System.get_env("SUPABASE_SERVICE_KEY")}")
+          |> Req.Request.put_header("content-type", content_type)
 
-    upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation.canvas.id}/#{generation.id}.jpeg", body: body_stream)
-    generated_image_url = "#{System.get_env("SUPABASE_URL")}/storage/v1/object/public/#{upload_res.body["Key"]}"
+        upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation.canvas.id}/#{generation.id}.jpeg", body: body_stream)
+        generated_image_url = "#{System.get_env("SUPABASE_URL")}/storage/v1/object/public/#{upload_res.body["Key"]}"
 
-    Artwork.Generation.update!(generation, %{
-      image_url: generated_image_url
-    })
+        Artwork.Generation.update!(generation, %{
+          image_url: generated_image_url
+        })
 
-    %{image: generated_image_url, coords: %{ top: generation.top, left: generation.left }}
+        %{image: generated_image_url, coords: %{ top: generation.top, left: generation.left }}
+    end
   end
 end

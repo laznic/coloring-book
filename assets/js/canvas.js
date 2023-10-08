@@ -25,11 +25,12 @@ export default {
     );
 
     this.handleEvent("selected_color", this.handleSelectedColor.bind(this));
-    this.handleEvent("selected_size", this.handleSelectedSize.bind(this));
     this.handleEvent(
       "selected_background_color",
       this.handleSelectedBackgroundColor.bind(this)
     );
+
+    this.handleEvent("accepted_drawing", this.handleAcceptedDrawing.bind(this));
 
     this.canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
@@ -142,11 +143,9 @@ export default {
       });
 
       canvas.add(this.followingRect.bringToFront());
+      this.lockPanAndZoom = true;
     });
 
-    let isDrawing = false;
-    let color = "black";
-    let size = 5;
     let canvasSize = 512;
     let followingStopped = false;
 
@@ -160,180 +159,8 @@ export default {
     followingCanvas.getElement().parentElement.style.position = "absolute";
 
     followingCanvas.on("path:created", () => {
-      canvas.remove(this.followingRect);
-      this.followingRect = null;
-      this.lockPanAndZoom = true;
-
-      const dataURL = followingCanvas.toDataURL();
-
-      followingCanvas.setBackgroundColor(this.currentBackgroundColor);
-      const canvasEl = followingCanvas.getElement();
-      const coords = canvasEl.parentElement.getBoundingClientRect();
-      const canvasCoords = canvas.calcViewportBoundaries();
-
-      const originalDrawing = followingCanvas.toDataURL();
-
-      this.pushEvent("send_drawing", {
-        drawing: originalDrawing,
-        coords: {
-          top: Math.floor(coords.top + canvasCoords.tl.y),
-          left: Math.floor(coords.left + canvasCoords.tl.x),
-        },
-      });
-
-      followingCanvas.setBackgroundColor("transparent");
-
-      fabric.Image.fromURL(dataURL, (oImg) => {
-        canvas.add(
-          oImg.set({
-            top: coords.top + canvasCoords.tl.y,
-            left: coords.left + canvasCoords.tl.x,
-            selectable: false,
-          })
-        );
-
-        const allImages = canvas.getObjects("image");
-        let intersectingObjects = [];
-
-        for (let i = 0; i < allImages.length; i++) {
-          if (allImages[i].cacheKey === oImg.cacheKey) continue;
-
-          if (oImg.intersectsWithObject(allImages[i])) {
-            intersectingObjects.push(allImages[i]);
-          }
-        }
-
-        if (intersectingObjects.length > 0) this.isMasking = true;
-
-        const background = new fabric.Rect({
-          height: 512,
-          width: 512,
-          top: coords.top + canvasCoords.tl.y + 1,
-          left: coords.left + canvasCoords.tl.x + 1,
-          fill: "white",
-          selectable: false,
-        });
-
-        canvas.add(background);
-
-        this.maskCoords = {
-          top: background.lineCoords.tl.y,
-          left: background.lineCoords.tl.x,
-        };
-
-        intersectingObjects.forEach((obj) => {
-          const { bl, tl, br, tr } = obj.lineCoords;
-
-          const isTopLeftInside = oImg.containsPoint(tl);
-          const isTopRightInside = oImg.containsPoint(tr);
-          const isBottomLeftInside = oImg.containsPoint(bl);
-          const isBottomRightInside = oImg.containsPoint(br);
-
-          const bottomLeftInside = {
-            top: oImg.lineCoords.tr.y + canvasCoords.tl.y,
-            left:
-              oImg.lineCoords.tr.x -
-              Math.abs(oImg.lineCoords.tr.x - bl.x) +
-              canvasCoords.tl.x,
-            width: Math.abs(oImg.lineCoords.tr.x - bl.x),
-            height: Math.abs(oImg.lineCoords.tr.y - bl.y),
-          };
-
-          const bottomRightInside = {
-            top: oImg.lineCoords.tl.y + canvasCoords.tl.y,
-            left: oImg.lineCoords.tl.x + canvasCoords.tl.x,
-            width: Math.abs(oImg.lineCoords.tl.x - br.x),
-            height: Math.abs(oImg.lineCoords.tl.y - br.y),
-          };
-
-          const topLeftInside = {
-            top:
-              oImg.lineCoords.br.y -
-              Math.abs(oImg.lineCoords.br.y - tl.y) +
-              canvasCoords.tl.y,
-            left:
-              oImg.lineCoords.br.x -
-              Math.abs(oImg.lineCoords.br.x - tl.x) +
-              canvasCoords.tl.x,
-            width: Math.abs(oImg.lineCoords.br.x - tl.x),
-            height: Math.abs(oImg.lineCoords.br.y - tl.y),
-          };
-
-          const topRightInside = {
-            top:
-              oImg.lineCoords.bl.y -
-              Math.abs(oImg.lineCoords.bl.y - tr.y) +
-              canvasCoords.tl.y,
-            left: oImg.lineCoords.bl.x + canvasCoords.tl.x,
-            width: Math.abs(oImg.lineCoords.bl.x - tr.x),
-            height: Math.abs(oImg.lineCoords.bl.y - tr.y),
-          };
-
-          const rectPosition = isTopLeftInside
-            ? topLeftInside
-            : isTopRightInside
-            ? topRightInside
-            : isBottomLeftInside
-            ? bottomLeftInside
-            : isBottomRightInside
-            ? bottomRightInside
-            : {};
-
-          const rect = new fabric.Rect({
-            ...rectPosition,
-            fill: "black",
-            selectable: false,
-          });
-
-          canvas.add(rect);
-        });
-
-        //Get source image
-        const mask = canvas.toDataURL({
-          height: 512,
-          width: 512,
-          ...this.maskCoords,
-        });
-
-        this.currentMask = mask;
-
-        canvas.remove(mask);
-        canvas.remove(background);
-        const rectangles = canvas.getObjects("rect");
-        canvas.remove(...rectangles);
-        canvas.remove(oImg);
-      });
-
-      followingCanvas.clear();
-      followingStopped = false;
-      followingCanvas.isDrawingMode = false;
-
-      const followingCanvasWrapper = document.getElementById(
-        "following-canvas-wrapper"
-      );
-      followingCanvasWrapper.classList.toggle("pointer-events-none");
-      followingCanvasWrapper.classList.toggle("origin-top-left");
-      followingCanvasWrapper.classList.toggle("transition-[transform]");
+      this.pushEvent("can_accept_drawing", {});
     });
-
-    // setCanvasSize();
-
-    // canvas.addEventListener("mousedown", start(canvas, context));
-    // canvas.addEventListener("mouseup", stop(context));
-    // canvas.addEventListener("mousemove", draw(canvas, context));
-    // canvas.addEventListener("mouseout", stop(context));
-
-    // followingCanvas.addEventListener(
-    //   "mousedown",
-    //   start(followingCanvas, followingContext)
-    // );
-    // followingCanvas.addEventListener("mouseup", stop(followingContext));
-    // followingCanvas.addEventListener(
-    //   "mousemove",
-    //   draw(followingCanvas, followingContext)
-    // );
-    // followingCanvas.addEventListener("mouseout", stop(followingContext));
-    // followingCanvas.addEventListener("click", freezeCanvas);
 
     canvas.on("mouse:wheel", (opt) => {
       if (this.lockPanAndZoom) return;
@@ -382,7 +209,7 @@ export default {
     }
 
     function setFollowingCanvasPosition(event) {
-      if (followingStopped || this.lockPanAndZoom) return;
+      if (this.followingCanvas.isDrawingMode || this.lockPanAndZoom) return;
 
       const { clientX, clientY } = event;
       const x = clientX - canvasSize / 2;
@@ -504,9 +331,6 @@ export default {
   handleSelectedColor({ color }) {
     this.followingCanvas.freeDrawingBrush.color = color;
   },
-  handleSelectedSize({ size }) {
-    this.followingCanvas.freeDrawingBrush.width = size;
-  },
   handleSelectedBackgroundColor({ color }) {
     this.currentBackgroundColor = color;
     const followingCanvasWrapper = document.getElementById(
@@ -514,6 +338,173 @@ export default {
     );
 
     followingCanvasWrapper.style.borderColor = color;
+  },
+  handleAcceptedDrawing() {
+    const canvas = this.canvas;
+    const followingCanvas = this.followingCanvas;
+    canvas.remove(this.followingRect);
+    this.followingRect = null;
+    this.lockPanAndZoom = true;
+
+    const dataURL = followingCanvas.toDataURL();
+
+    followingCanvas.setBackgroundColor(this.currentBackgroundColor);
+    const canvasEl = followingCanvas.getElement();
+    const coords = canvasEl.parentElement.getBoundingClientRect();
+    const canvasCoords = canvas.calcViewportBoundaries();
+
+    const originalDrawing = followingCanvas.toDataURL();
+
+    this.pushEvent("send_drawing", {
+      drawing: originalDrawing,
+      coords: {
+        top: Math.floor(coords.top + canvasCoords.tl.y),
+        left: Math.floor(coords.left + canvasCoords.tl.x),
+      },
+    });
+
+    followingCanvas.setBackgroundColor("transparent");
+
+    fabric.Image.fromURL(dataURL, (oImg) => {
+      canvas.add(
+        oImg.set({
+          top: coords.top + canvasCoords.tl.y,
+          left: coords.left + canvasCoords.tl.x,
+          selectable: false,
+        })
+      );
+
+      const allImages = canvas.getObjects("image");
+      let intersectingObjects = [];
+
+      for (let i = 0; i < allImages.length; i++) {
+        if (allImages[i].cacheKey === oImg.cacheKey) continue;
+
+        if (oImg.intersectsWithObject(allImages[i])) {
+          intersectingObjects.push(allImages[i]);
+        }
+      }
+
+      if (intersectingObjects.length > 0) this.isMasking = true;
+
+      const background = new fabric.Rect({
+        height: 512,
+        width: 512,
+        top: coords.top + canvasCoords.tl.y + 1,
+        left: coords.left + canvasCoords.tl.x + 1,
+        fill: "white",
+        selectable: false,
+      });
+
+      canvas.add(background);
+
+      this.maskCoords = {
+        top: background.lineCoords.tl.y,
+        left: background.lineCoords.tl.x,
+      };
+
+      intersectingObjects.forEach((obj) => {
+        const { bl, tl, br, tr } = obj.lineCoords;
+
+        const isTopLeftInside = oImg.containsPoint(tl);
+        const isTopRightInside = oImg.containsPoint(tr);
+        const isBottomLeftInside = oImg.containsPoint(bl);
+        const isBottomRightInside = oImg.containsPoint(br);
+
+        const bottomLeftInside = {
+          top: oImg.lineCoords.tr.y + canvasCoords.tl.y,
+          left:
+            oImg.lineCoords.tr.x -
+            Math.abs(oImg.lineCoords.tr.x - bl.x) +
+            canvasCoords.tl.x,
+          width: Math.abs(oImg.lineCoords.tr.x - bl.x),
+          height: Math.abs(oImg.lineCoords.tr.y - bl.y),
+        };
+
+        const bottomRightInside = {
+          top: oImg.lineCoords.tl.y + canvasCoords.tl.y,
+          left: oImg.lineCoords.tl.x + canvasCoords.tl.x,
+          width: Math.abs(oImg.lineCoords.tl.x - br.x),
+          height: Math.abs(oImg.lineCoords.tl.y - br.y),
+        };
+
+        const topLeftInside = {
+          top:
+            oImg.lineCoords.br.y -
+            Math.abs(oImg.lineCoords.br.y - tl.y) +
+            canvasCoords.tl.y,
+          left:
+            oImg.lineCoords.br.x -
+            Math.abs(oImg.lineCoords.br.x - tl.x) +
+            canvasCoords.tl.x,
+          width: Math.abs(oImg.lineCoords.br.x - tl.x),
+          height: Math.abs(oImg.lineCoords.br.y - tl.y),
+        };
+
+        const topRightInside = {
+          top:
+            oImg.lineCoords.bl.y -
+            Math.abs(oImg.lineCoords.bl.y - tr.y) +
+            canvasCoords.tl.y,
+          left: oImg.lineCoords.bl.x + canvasCoords.tl.x,
+          width: Math.abs(oImg.lineCoords.bl.x - tr.x),
+          height: Math.abs(oImg.lineCoords.bl.y - tr.y),
+        };
+
+        const rectPosition = isTopLeftInside
+          ? topLeftInside
+          : isTopRightInside
+          ? topRightInside
+          : isBottomLeftInside
+          ? bottomLeftInside
+          : isBottomRightInside
+          ? bottomRightInside
+          : {};
+
+        const rect = new fabric.Rect({
+          ...rectPosition,
+          fill: "black",
+          selectable: false,
+        });
+
+        canvas.add(rect);
+      });
+
+      //Get source image
+      const mask = canvas.toDataURL({
+        height: 512,
+        width: 512,
+        ...this.maskCoords,
+      });
+
+      this.currentMask = mask;
+
+      canvas.remove(mask);
+      canvas.remove(background);
+      const rectangles = canvas.getObjects("rect");
+      canvas.remove(...rectangles);
+      canvas.remove(oImg);
+    });
+
+    followingCanvas.clear();
+    followingCanvas.isDrawingMode = false;
+
+    const followingCanvasWrapper = document.getElementById(
+      "following-canvas-wrapper"
+    );
+    followingCanvasWrapper.classList.add("pointer-events-none");
+    followingCanvasWrapper.classList.add("origin-top-left");
+    followingCanvasWrapper.classList.add("transition-[transform]");
+  },
+  updated() {
+    if (this.followingCanvas.isDrawingMode) {
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
+      followingCanvasWrapper.classList.remove("pointer-events-none");
+      followingCanvasWrapper.classList.remove("origin-top-left");
+      followingCanvasWrapper.classList.remove("transition-[transform]");
+    }
   },
 };
 

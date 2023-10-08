@@ -10,14 +10,6 @@
 
 <section class="fixed bottom-0 h-24 w-fit right-0 left-0 mx-auto flex gap-2 items-center justify-center">
   <article id="brush" class="p-4 bg-white rounded-lg shadow-lg border-1 border-neutral-300 w-44 h-fit transition-all absolute bottom-full hidden">
-    <section class="grid grid-cols-4 gap-4 mb-4 pb-4 border-b border-neutral-150">
-      <%= for size <- [5, 10, 15, 20] do %>
-        <button class={"w-8 h-8 flex items-center justify-center #{if @size === Integer.to_string(size), do: "border-b-2 border-neutral-500"}"} phx-click="select_size" phx-value-size={size}>
-          <span class="block bg-black" style={"width: #{size}px; height: #{size}px"}></span>
-        </button>
-      <% end %>
-    </section>
-
     <section class="grid grid-cols-4 gap-2 items-center">
       <%= for color <- ["#fff", "#000", "#6b7280", "#ef4444", "#f97316", "#f59e0b", "#facc15", "#713f12", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"] do %>
         <button class={"rounded-full flex items-center justify-center w-8 h-8 #{if color === "#fff", do: "ring-2 ring-neutral-300 w-7 h-7"}"} style={"background: #{color};"} phx-click="select_color" phx-value-color={color}>
@@ -47,5 +39,9 @@
 
   <button class="bg-white shadow-xl text-neutral-900 rounded-full p-2" phx-click={JS.toggle(to: "#background")}>
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paint-bucket"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg>
+  </button>
+
+  <button class="bg-emerald-100 shadow-xl text-emerald-700 rounded-full p-2" phx-click="accept_drawing" disabled={@no_drawings} aria-disabled={@no_drawings}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"/></svg>
   </button>
 </section>
