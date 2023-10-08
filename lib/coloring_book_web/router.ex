@@ -19,7 +19,7 @@ defmodule ColoringBookWeb.Router do
 
     get "/", PageController, :home
 
-    live "/canvas", CanvasLive, :index
+    live "/canvas/:id", CanvasLive, :index
   end
 
   # Other scopes may use custom stacks.

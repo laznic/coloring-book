@@ -1,4 +1,4 @@
-defmodule ColoringBook.Canvases.Canvas do
+defmodule ColoringBook.Artwork.Canvas do
   use Ash.Resource,
     data_layer: AshPostgres.DataLayer
 
@@ -8,7 +8,7 @@ defmodule ColoringBook.Canvases.Canvas do
   end
 
   code_interface do
-    define_for ColoringBook.Canvases
+    define_for ColoringBook.Artwork
 
     define :create, action: :create
     define :read, action: :read

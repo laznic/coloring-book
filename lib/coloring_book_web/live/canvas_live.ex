@@ -2,14 +2,14 @@ defmodule ColoringBookWeb.CanvasLive do
   use ColoringBookWeb, :live_view
   require Ash.Query
 
-  alias ColoringBook.Canvases
+  alias ColoringBook.Artwork
 
   @img2prompt_model "pharmapsychotic/clip-interrogator:8151e1c9f47e696fa316146a2e35812ccf79cfc9eba05b11c7f450155102af70"
   @sd_model "stability-ai/sdxl:1bfb924045802467cf8869d96b231a12e6aa994abfe37e337c63a4e49a8c6c41"
   @sd_api_url "https://api.stability.ai/v1"
 
   def mount(params, _session, socket) do
-    new_canvas = Canvases.Canvas.create!()
+    new_canvas = Artwork.Canvas.create!()
 
     {:ok, assign(socket, canvas_id: new_canvas.id)}
   end
@@ -69,7 +69,7 @@ defmodule ColoringBookWeb.CanvasLive do
 
   defp gen_image_prompt(drawing, coords, canvas_id) do
     prompt = Replicate.run(@img2prompt_model, %{ image: drawing, mode: "classic", clip_model_name: "ViT-H-14/laion2b_s32b_b79k" })
-    generation = Canvases.Generation.create!(%{ prompt: prompt, top: coords["top"], left: coords["left"], canvas_id: canvas_id })
+    generation = Artwork.Generation.create!(%{ prompt: prompt, top: coords["top"], left: coords["left"], canvas_id: canvas_id })
 
     %{prompt: prompt, coords: coords, generation_id: generation.id}
   end
@@ -79,15 +79,15 @@ defmodule ColoringBookWeb.CanvasLive do
   end
 
   defp gen_image(generation_id) do
-    generation = Canvases.Generation.get_by_id!(generation_id)
+    generation = Artwork.Generation.get_by_id!(generation_id)
     [image] = Replicate.run(@sd_model, %{ prompt: generation.prompt, width: 1024, height: 1024, negative_prompt: "nsfw, ugly, blurry" })
-    Canvases.Generation.update!(generation, %{ image_url: image })
+    Artwork.Generation.update!(generation, %{ image_url: image })
 
     %{image: image, coords: %{ top: generation.top, left: generation.left }}
   end
 
   defp gen_image(generation_id, base_image, mask) do
-    generation = Canvases.Generation.get_by_id!(generation_id)
+    generation = Artwork.Generation.get_by_id!(generation_id)
 
     multipart = Multipart.new()
       |> Multipart.add_part(Multipart.Part.text_field(generation.prompt, "text_prompts[0][text]"))
@@ -124,7 +124,7 @@ defmodule ColoringBookWeb.CanvasLive do
     upload_res = Req.post!(req, url: "/storage/v1/object/canvas-images/#{generation_id}/generated_image.png", body: body_stream)
     generated_image_url = "#{System.get_env("SUPABASE_URL")}/storage/v1/object/public/#{upload_res.body["Key"]}"
 
-    Canvases.Generation.update!(generation, %{
+    Artwork.Generation.update!(generation, %{
       image_url: generated_image_url
     })
 

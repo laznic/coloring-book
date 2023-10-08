@@ -1,4 +1,4 @@
-defmodule ColoringBook.Canvases.Generation do
+defmodule ColoringBook.Artwork.Generation do
   use Ash.Resource,
     data_layer: AshPostgres.DataLayer
 
@@ -8,7 +8,7 @@ defmodule ColoringBook.Canvases.Generation do
   end
 
   code_interface do
-    define_for ColoringBook.Canvases
+    define_for ColoringBook.Artwork
 
     define :create, action: :create
     define :read, action: :read
@@ -32,7 +32,7 @@ defmodule ColoringBook.Canvases.Generation do
   end
 
   relationships do
-    belongs_to :canvas, ColoringBook.Canvases.Canvas do
+    belongs_to :canvas, ColoringBook.Artwork.Canvas do
       attribute_writable? true
     end
   end
