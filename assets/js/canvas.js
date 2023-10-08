@@ -5,6 +5,9 @@ export default {
     this.currentMask = null;
     this.isMasking = false;
     this.canDrag = false;
+    this.followingRect = null;
+    this.maskCoords = {};
+    this.lockPanAndZoom = false;
 
     this.handleEvent(
       "render_initial_generations",
@@ -38,14 +41,18 @@ export default {
     canvas.on("mouse:down", (opt) => {
       const evt = opt.e;
 
+      if (this.lockPanAndZoom) return;
+
       if (this.canDrag) {
         canvas.isDragging = true;
-
         lastPosX = evt.clientX;
         lastPosY = evt.clientY;
       }
     });
+
     canvas.on("mouse:move", (opt) => {
+      if (this.lockPanAndZoom) return;
+
       if (this.canDrag) {
         canvas.setCursor("grab");
       }
@@ -54,21 +61,80 @@ export default {
         canvas.setCursor("grabbing");
         const e = opt.e;
         const vpt = canvas.viewportTransform;
+
         vpt[4] += e.clientX - lastPosX;
         vpt[5] += e.clientY - lastPosY;
+
         canvas.requestRenderAll();
+
         lastPosX = e.clientX;
         lastPosY = e.clientY;
       }
     });
 
     canvas.on("mouse:up", (opt) => {
+      if (this.lockPanAndZoom) return;
+
       if (canvas.isDragging) {
         // on mouse up we want to recalculate new interaction
         // for all objects, so we call setViewportTransform
         canvas.isDragging = !canvas.isDragging;
         canvas.setViewportTransform(canvas.viewportTransform);
+
+        if (this.followingRect) {
+          const { tl } = this.followingRect.lineCoords;
+
+          const followingCanvasWrapper = document.getElementById(
+            "following-canvas-wrapper"
+          );
+
+          followingCanvasWrapper.style.top = `${tl.y}px`;
+          followingCanvasWrapper.style.left = `${tl.x}px`;
+        }
+
+        return;
       }
+    });
+
+    canvas.on("mouse:dblclick", (opt) => {
+      if (this.lockPanAndZoom) return;
+
+      if (followingStopped) return;
+
+      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, 1);
+
+      if (this.followingRect) {
+        const { tl } = this.followingRect.lineCoords;
+
+        followingCanvasWrapper.style.top = `${tl.y}px`;
+        followingCanvasWrapper.style.left = `${tl.x}px`;
+      }
+
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
+
+      followingCanvasWrapper.style.transform = `scale(1)`;
+      followingCanvasWrapper.classList.toggle("pointer-events-none");
+      followingCanvasWrapper.classList.toggle("origin-top-left");
+      followingCanvasWrapper.classList.toggle("transition-[transform]");
+      followingStopped = true;
+      followingCanvas.isDrawingMode = true;
+
+      if (this.followingRect) return;
+
+      const pointer = canvas.getPointer(opt.e);
+
+      this.followingRect = new fabric.Rect({
+        width: canvasSize,
+        height: canvasSize,
+        top: pointer.y - canvasSize / 2,
+        left: pointer.x - canvasSize / 2,
+        fill: "transparent",
+        selectable: false,
+      });
+
+      canvas.add(this.followingRect.bringToFront());
     });
 
     let isDrawing = false;
@@ -85,9 +151,11 @@ export default {
     followingCanvas.freeDrawingBrush.limitToCanvasSize = true;
     followingCanvas.getElement().parentElement.style.position = "absolute";
 
-    followingCanvas.on("mouse:down", freezeCanvas);
-
     followingCanvas.on("path:created", () => {
+      canvas.remove(this.followingRect);
+      this.followingRect = null;
+      this.lockPanAndZoom = true;
+
       const dataURL = followingCanvas.toDataURL();
 
       followingCanvas.setBackgroundColor("#ffcc00");
@@ -100,8 +168,8 @@ export default {
       this.pushEvent("send_drawing", {
         drawing: originalDrawing,
         coords: {
-          top: coords.top + canvasCoords.tl.y,
-          left: coords.left + canvasCoords.tl.x,
+          top: Math.floor(coords.top + canvasCoords.tl.y),
+          left: Math.floor(coords.left + canvasCoords.tl.x),
         },
       });
 
@@ -140,6 +208,11 @@ export default {
 
         canvas.add(background);
 
+        this.maskCoords = {
+          top: background.lineCoords.tl.y,
+          left: background.lineCoords.tl.x,
+        };
+
         intersectingObjects.forEach((obj) => {
           const { bl, tl, br, tr } = obj.lineCoords;
 
@@ -149,29 +222,41 @@ export default {
           const isBottomRightInside = oImg.containsPoint(br);
 
           const bottomLeftInside = {
-            top: oImg.lineCoords.tr.y,
-            left: oImg.lineCoords.tr.x - Math.abs(oImg.lineCoords.tr.x - bl.x),
+            top: oImg.lineCoords.tr.y + canvasCoords.tl.y,
+            left:
+              oImg.lineCoords.tr.x -
+              Math.abs(oImg.lineCoords.tr.x - bl.x) +
+              canvasCoords.tl.x,
             width: Math.abs(oImg.lineCoords.tr.x - bl.x),
             height: Math.abs(oImg.lineCoords.tr.y - bl.y),
           };
 
           const bottomRightInside = {
-            top: oImg.lineCoords.tl.y,
-            left: oImg.lineCoords.tl.x,
+            top: oImg.lineCoords.tl.y + canvasCoords.tl.y,
+            left: oImg.lineCoords.tl.x + canvasCoords.tl.x,
             width: Math.abs(oImg.lineCoords.tl.x - br.x),
             height: Math.abs(oImg.lineCoords.tl.y - br.y),
           };
 
           const topLeftInside = {
-            top: oImg.lineCoords.br.y - Math.abs(oImg.lineCoords.br.y - tl.y),
-            left: oImg.lineCoords.br.x - Math.abs(oImg.lineCoords.br.x - tl.x),
+            top:
+              oImg.lineCoords.br.y -
+              Math.abs(oImg.lineCoords.br.y - tl.y) +
+              canvasCoords.tl.y,
+            left:
+              oImg.lineCoords.br.x -
+              Math.abs(oImg.lineCoords.br.x - tl.x) +
+              canvasCoords.tl.x,
             width: Math.abs(oImg.lineCoords.br.x - tl.x),
             height: Math.abs(oImg.lineCoords.br.y - tl.y),
           };
 
           const topRightInside = {
-            top: oImg.lineCoords.bl.y - Math.abs(oImg.lineCoords.bl.y - tr.y),
-            left: oImg.lineCoords.bl.x,
+            top:
+              oImg.lineCoords.bl.y -
+              Math.abs(oImg.lineCoords.bl.y - tr.y) +
+              canvasCoords.tl.y,
+            left: oImg.lineCoords.bl.x + canvasCoords.tl.x,
             width: Math.abs(oImg.lineCoords.bl.x - tr.x),
             height: Math.abs(oImg.lineCoords.bl.y - tr.y),
           };
@@ -199,8 +284,7 @@ export default {
         const mask = canvas.toDataURL({
           height: 512,
           width: 512,
-          top: coords.top + canvasCoords.tl.y,
-          left: coords.left + canvasCoords.tl.x,
+          ...this.maskCoords,
         });
 
         this.currentMask = mask;
@@ -216,13 +300,12 @@ export default {
       followingStopped = false;
       followingCanvas.isDrawingMode = false;
 
-      // const testing = canvas.toDataURL({
-      //   height: 512,
-      //   width: 512,
-      //   top: coords.top + canvasCoords.tl.y,
-      //   left: coords.left + canvasCoords.tl.x,
-      // });
-      // console.log(testing);
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
+      followingCanvasWrapper.classList.toggle("pointer-events-none");
+      followingCanvasWrapper.classList.toggle("origin-top-left");
+      followingCanvasWrapper.classList.toggle("transition-[transform]");
     });
 
     // setCanvasSize();
@@ -244,48 +327,70 @@ export default {
     // followingCanvas.addEventListener("mouseout", stop(followingContext));
     // followingCanvas.addEventListener("click", freezeCanvas);
 
-    canvas.on("mouse:wheel", function (opt) {
+    canvas.on("mouse:wheel", (opt) => {
+      if (this.lockPanAndZoom) return;
+
       const deltaY = opt.e.deltaY;
       let zoom = canvas.getZoom();
 
       zoom *= 0.999 ** deltaY;
 
-      if (zoom > 1.5) zoom = 1.5;
+      if (zoom > 1) zoom = 1;
       if (zoom < 0.2) zoom = 0.2;
 
       canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
+
+      if (this.followingRect) {
+        const { tl } = this.followingRect.lineCoords;
+
+        followingCanvasWrapper.style.top = `${tl.y}px`;
+        followingCanvasWrapper.style.left = `${tl.x}px`;
+      }
+
+      followingCanvasWrapper.style.transform = `scale(${zoom})`;
 
       opt.e.preventDefault();
       opt.e.stopPropagation();
     });
 
-    window.addEventListener("mousemove", setFollowingCanvasPosition);
+    window.addEventListener("mousemove", setFollowingCanvasPosition.bind(this));
     window.addEventListener("keydown", enableDrag.bind(this));
     window.addEventListener("keyup", enableDrag.bind(this));
 
     function setFollowingCanvasPosition(event) {
-      if (followingStopped) return;
+      if (followingStopped || this.lockPanAndZoom) return;
 
       const { clientX, clientY } = event;
       const x = clientX - canvasSize / 2;
       const y = clientY - canvasSize / 2;
-      const canvasElement = followingCanvas.getElement();
 
-      canvasElement.parentElement.style.left = `${x}px`;
-      canvasElement.parentElement.style.top = `${y}px`;
-    }
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
 
-    function freezeCanvas() {
-      if (this.canDrag) return;
-
-      followingStopped = true;
-      followingCanvas.isDrawingMode = true;
+      followingCanvasWrapper.style.left = `${x}px`;
+      followingCanvasWrapper.style.top = `${y}px`;
     }
 
     function enableDrag(event) {
       if (event.code !== "Space" && event.key !== " ") return;
 
-      this.canDrag = event.type === "keydown" ? true : false;
+      const keyDown = event.type === "keydown" ? true : false;
+      const followingCanvasWrapper = document.getElementById(
+        "following-canvas-wrapper"
+      );
+
+      if (keyDown) {
+        followingCanvasWrapper.style.transform = `scale(0)`;
+      } else {
+        followingCanvasWrapper.style.transform = `scale(${canvas.getZoom()})`;
+      }
+
+      this.canDrag = keyDown;
     }
   },
   // Because we cannot export tainted canvas so just convert to Base64 for now
@@ -335,8 +440,7 @@ export default {
     const baseImage = this.canvas.toDataURL({
       height: 512,
       width: 512,
-      top: coords.top,
-      left: coords.left,
+      ...this.maskCoords,
     });
 
     const eventName = !this.isMasking
@@ -372,6 +476,7 @@ export default {
 
           const rectangles = this.canvas.getObjects("rect");
           this.canvas.remove(rectangles);
+          this.lockPanAndZoom = false;
         });
       })
       .catch((err) => console.error(err));

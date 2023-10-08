@@ -1,4 +1,7 @@
 <section id="canvas-wrapper" class="flex items-center justify-center w-full h-full" phx-hook="canvas">
-  <canvas id="canvas" class="border border-black"></canvas>
-  <canvas id="following-canvas" class="border border-red-500 absolute"></canvas>
+  <canvas id="canvas"></canvas>
+
+  <article id="following-canvas-wrapper" class="border-2 border-red-500 absolute w-[512px] h-[512px] transition-[transform] pointer-events-none">
+    <canvas id="following-canvas"></canvas>
+  </article>
 </section>
