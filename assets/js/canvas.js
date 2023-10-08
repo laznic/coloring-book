@@ -26,7 +26,7 @@ export default {
     this.canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
       selection: false,
-      backgroundColor: "#808080",
+      backgroundColor: "#171717",
     });
 
     const canvas = this.canvas;
@@ -360,6 +360,18 @@ export default {
     window.addEventListener("mousemove", setFollowingCanvasPosition.bind(this));
     window.addEventListener("keydown", enableDrag.bind(this));
     window.addEventListener("keyup", enableDrag.bind(this));
+    window.addEventListener("resize", setCanvasSize.bind(this));
+
+    function setCanvasSize() {
+      const canvasWrapper = document.getElementById("canvas-wrapper");
+      const canvasWrapperWidth = canvasWrapper.offsetWidth;
+      const canvasWrapperHeight = canvasWrapper.offsetHeight;
+
+      this.canvas.setDimensions({
+        width: canvasWrapperWidth,
+        height: canvasWrapperHeight,
+      });
+    }
 
     function setFollowingCanvasPosition(event) {
       if (followingStopped || this.lockPanAndZoom) return;
