@@ -22,18 +22,20 @@ defmodule ColoringBookWeb.Router do
 
     ash_authentication_live_session :authentication_optional,
       on_mount: {ColoringBookWeb.LiveUserAuth, :live_user_optional} do
+
       get "/", PageController, :home
+
+      live "/register", AuthLive.Index, :register
+      live "/sign-in", AuthLive.Index, :sign_in
     end
 
     ash_authentication_live_session :authentication_required,
       on_mount: {ColoringBookWeb.LiveUserAuth, :live_user_required} do
 
-      get "/canvas", PageController, :home
-      live "/canvas/:id", CanvasLive, :index
+      live "/canvas", CanvasIndexLive, :index
+      live "/canvas/:id", CanvasLive, :single
     end
 
-    sign_in_route(on_mount: [{ColoringBookWeb.LiveUserAuth, :live_no_user}])
-    sign_out_route AuthController
     auth_routes_for ColoringBook.Accounts.User, to: AuthController
   end
 

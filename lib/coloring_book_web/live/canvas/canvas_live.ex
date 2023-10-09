@@ -11,10 +11,12 @@ defmodule ColoringBookWeb.CanvasLive do
   def mount(params, _session, socket) do
     {:ok,
       socket
-      |> assign(color: "#fff")
-      |> assign(background: "#000")
+      |> assign(color: "#000")
+      |> assign(background: "#fff")
       |> assign(no_drawings: true)
       |> assign(theme: "dark")
+      |> push_event("selected_color", %{ color: "#000" })
+      |> push_event("selected_background_color", %{ color: "#fff" })
     }
   end
 
@@ -26,6 +28,7 @@ defmodule ColoringBookWeb.CanvasLive do
     {:noreply,
      socket
      |> assign(:canvas_id, canvas.id)
+     |> assign(:show_info_modal, Enum.empty?(generations))
      |> push_event("render_initial_generations", %{ generations: generations })
     }
   end
@@ -86,6 +89,11 @@ defmodule ColoringBookWeb.CanvasLive do
     end
 
     {:noreply, socket |> assign(theme: theme) |> push_event("theme_changed", %{ theme: theme })}
+  end
+
+  @impl true
+  def handle_event("toggle_info_modal", _params, socket) do
+    {:noreply, assign(socket, show_info_modal: !socket.assigns.show_info_modal)}
   end
 
   @impl true

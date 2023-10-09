@@ -14,7 +14,7 @@
       <%= for color <- ["#fff", "#000", "#6b7280", "#ef4444", "#f97316", "#f59e0b", "#facc15", "#713f12", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"] do %>
         <button class={"rounded-full flex items-center justify-center w-8 h-8 #{if color === "#fff", do: "ring-2 ring-neutral-300 w-7 h-7"}"} style={"background: #{color};"} phx-click="select_color" phx-value-color={color}>
           <%= if color == @color do %>
-            <span class={"block w-5 h-5 rounded-full bg-white #{if color === "#fff", do: "bg-black"}"}></span>
+            <span class={"block w-5 h-5 rounded-full #{if color !== "#fff", do: "bg-white"} #{if color == "#fff", do: "bg-black"}"}></span>
           <% end %>
         </button>
       <% end %>
@@ -26,12 +26,16 @@
       <%= for color <- ["#fff", "#000", "#6b7280", "#ef4444", "#f97316", "#f59e0b", "#facc15", "#713f12", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"] do %>
         <button class={"rounded-full flex items-center justify-center w-8 h-8 #{if color === "#fff", do: "ring-2 ring-neutral-300 w-7 h-7"}"} style={"background: #{color};"} phx-click="select_background_color" phx-value-background={color}>
           <%= if color == @background do %>
-            <span class={"block w-5 h-5 rounded-full bg-white #{if color === "#fff", do: "bg-black"}"}></span>
+            <span class={"block w-5 h-5 rounded-full #{if color !== "#fff", do: "bg-white"} #{if color == "#fff", do: "bg-black"}"}></span>
           <% end %>
         </button>
       <% end %>
     </section>
   </article>
+
+  <button class="bg-white shadow-xl text-neutral-900 rounded-full p-2 cursor-pointer" phx-click={show_modal("info")}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-help-circle"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+  </button>
 
   <button class="bg-white shadow-xl text-neutral-900 rounded-full p-2 cursor-pointer" phx-click="change_theme">
     <svg :if={@theme == "light"} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -49,5 +53,40 @@
   <button class={"bg-emerald-100 shadow-xl text-emerald-700 rounded-full p-2 cursor-pointer #{if @no_drawings, do: "cursor-not-allowed"}"} phx-click="accept_drawing" disabled={@no_drawings} aria-disabled={@no_drawings}>
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"/></svg>
   </button>
-
 </section>
+
+<.modal id="info" show={@show_info_modal}>
+  <ul class="list-disc">
+    <li>You can move the canvas by <strong>holding
+      <span class="inline-block px-2 mx-1 bg-neutral-800 rounded-md">
+      Space
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mb-2 ml-1"><path d="M22 17v1c0 .5-.5 1-1 1H3c-.5 0-1-.5-1-1v-1"/></svg></span>
+      and
+      <span class="inline-block px-2 mx-1 bg-neutral-800 rounded-md">
+        dragging
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block w-4 ml-1"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </span>
+      </strong>
+    </li>
+    <li>
+      <span class="inline-block px-2 mr-1 bg-neutral-800 rounded-md">
+      <strong>Double click</strong>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block w-4 ml-1"><path d="m9 9 5 12 1.8-5.2L21 14Z"/><path d="M7.2 2.2 8 5.1"/><path d="m5.1 8-2.9-.8"/><path d="M14 4.1 12 6"/><path d="m6 12-1.9 2"/></svg>
+      </span>
+      on canvas to enable drawing at the square's location.
+    </li>
+    <li>
+      You can change the
+      <span class="inline-block px-2 mr-1 bg-neutral-800 rounded-md">
+        <strong>brush</strong>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block w-4 ml-1"><path d="M14 19.9V16h3a2 2 0 0 0 2-2v-2H5v2c0 1.1.9 2 2 2h3v3.9a2 2 0 1 0 4 0Z"/><path d="M6 12V2h12v10"/><path d="M14 2v4"/><path d="M10 2v2"/></svg>
+      </span>
+      and
+      <span class="inline-block px-2 mr-1 bg-neutral-800 rounded-md">
+        <strong>drawing area background</strong>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block w-4 ml-1"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg>
+      </span>
+      colors from the buttons below.
+    </li>
+  </ul>
+</.modal>

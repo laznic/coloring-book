@@ -8,7 +8,7 @@ defmodule ColoringBookWeb.LiveUserAuth do
 
   def on_mount(:live_user_optional, _params, _session, socket) do
     if socket.assigns[:current_user] do
-      {:cont, socket}
+      {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/canvas")}
     else
       {:cont, assign(socket, :current_user, nil)}
     end

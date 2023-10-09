@@ -13,6 +13,7 @@ defmodule ColoringBook.Artwork.Canvas do
     define :create, action: :create
     define :read, action: :read
     define :get_by_id, action: :read, get_by: [:id], get?: true
+    define :get_by_user_id, action: :read, get_by: [:user_id], get?: true
   end
 
   actions do
