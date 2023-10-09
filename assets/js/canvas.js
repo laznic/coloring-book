@@ -99,8 +99,6 @@ export default {
           followingCanvasWrapper.style.top = `${tl.y}px`;
           followingCanvasWrapper.style.left = `${tl.x}px`;
         }
-
-        return;
       }
     });
 
@@ -324,6 +322,7 @@ export default {
           const rectangles = this.canvas.getObjects("rect");
           this.canvas.remove(rectangles);
           this.lockPanAndZoom = false;
+          this.followingCanvas.clear();
         });
       })
       .catch((err) => console.error(err));
@@ -486,15 +485,14 @@ export default {
       canvas.remove(oImg);
     });
 
-    followingCanvas.clear();
     followingCanvas.isDrawingMode = false;
 
     const followingCanvasWrapper = document.getElementById(
       "following-canvas-wrapper"
     );
-    followingCanvasWrapper.classList.add("pointer-events-none");
-    followingCanvasWrapper.classList.add("origin-top-left");
-    followingCanvasWrapper.classList.add("transition-[transform]");
+    followingCanvasWrapper.classList.toggle("pointer-events-none");
+    followingCanvasWrapper.classList.remove("origin-top-left");
+    followingCanvasWrapper.classList.toggle("transition-[transform]");
   },
   updated() {
     if (this.followingCanvas.isDrawingMode) {
@@ -502,7 +500,7 @@ export default {
         "following-canvas-wrapper"
       );
       followingCanvasWrapper.classList.remove("pointer-events-none");
-      followingCanvasWrapper.classList.remove("origin-top-left");
+      followingCanvasWrapper.classList.add("origin-top-left");
       followingCanvasWrapper.classList.remove("transition-[transform]");
     }
   },
