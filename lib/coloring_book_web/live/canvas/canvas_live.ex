@@ -68,7 +68,7 @@ defmodule ColoringBookWeb.CanvasLive do
 
   @impl true
   def handle_event("accept_drawing", _params, socket) do
-    {:noreply, socket |> push_event("accepted_drawing", %{})}
+    {:noreply, socket |> assign(no_drawings: true) |> push_event("accepted_drawing", %{})}
   end
 
   @impl true
