@@ -1,5 +1,6 @@
 defmodule ColoringBookWeb.Router do
   use ColoringBookWeb, :router
+  use AshAuthentication.Phoenix.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -8,18 +9,32 @@ defmodule ColoringBookWeb.Router do
     plug :put_root_layout, {ColoringBookWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :load_from_session
   end
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :load_from_bearer
   end
 
   scope "/", ColoringBookWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    ash_authentication_live_session :authentication_optional,
+      on_mount: {ColoringBookWeb.LiveUserAuth, :live_user_optional} do
+      get "/", PageController, :home
+    end
 
-    live "/canvas/:id", CanvasLive, :index
+    ash_authentication_live_session :authentication_required,
+      on_mount: {ColoringBookWeb.LiveUserAuth, :live_user_required} do
+
+      get "/canvas", PageController, :home
+      live "/canvas/:id", CanvasLive, :index
+    end
+
+    sign_in_route(on_mount: [{ColoringBookWeb.LiveUserAuth, :live_no_user}])
+    sign_out_route AuthController
+    auth_routes_for ColoringBook.Accounts.User, to: AuthController
   end
 
   # Other scopes may use custom stacks.

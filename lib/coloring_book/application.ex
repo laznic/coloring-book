@@ -17,9 +17,10 @@ defmodule ColoringBook.Application do
       # Start Finch
       {Finch, name: ColoringBook.Finch},
       # Start the Endpoint (http/https)
-      ColoringBookWeb.Endpoint
+      ColoringBookWeb.Endpoint,
       # Start a worker by calling: ColoringBook.Worker.start_link(arg)
       # {ColoringBook.Worker, arg}
+      {AshAuthentication.Supervisor, otp_app: :coloring_book}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

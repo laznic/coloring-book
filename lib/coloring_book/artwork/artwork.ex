@@ -2,6 +2,7 @@ defmodule ColoringBook.Artwork do
   use Ash.Api
 
   resources do
-    registry ColoringBook.Artwork.Registry
+    resource ColoringBook.Artwork.Canvas
+    resource ColoringBook.Artwork.Generation
   end
 end

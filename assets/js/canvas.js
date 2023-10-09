@@ -513,5 +513,3 @@ export default {
     }
   },
 };
-
-// get an area with one color from image

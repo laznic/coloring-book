@@ -9,7 +9,10 @@ import Config
 
 config :coloring_book,
   ecto_repos: [ColoringBook.Repo],
-  ash_apis: [ColoringBook.Artwork]
+  ash_apis: [ColoringBook.Artwork, ColoringBook.Accounts]
+
+config :ash,
+  :use_all_identities_in_manage_relationship?, false
 
 # Configures the endpoint
 config :coloring_book, ColoringBookWeb.Endpoint,
@@ -42,7 +45,7 @@ config :esbuild,
 
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "3.1.8",
+  version: "3.3.3",
   default: [
     args: ~w(
       --config=tailwind.config.js

@@ -27,6 +27,10 @@ defmodule ColoringBook.Artwork.Canvas do
   end
 
   relationships do
+    belongs_to :user, ColoringBook.Accounts.User do
+      attribute_writable? true
+    end
+
     has_many :generations, ColoringBook.Artwork.Generation
   end
 end
