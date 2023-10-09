@@ -31,6 +31,10 @@ export default {
     );
 
     this.handleEvent("accepted_drawing", this.handleAcceptedDrawing.bind(this));
+    this.handleEvent(
+      "error_in_generation",
+      this.handleErrorInGeneration.bind(this)
+    );
 
     this.canvas = new fabric.Canvas("canvas", {
       centeredScaling: true,
@@ -39,7 +43,6 @@ export default {
     });
 
     const canvas = this.canvas;
-
     canvas.setWidth(window.innerWidth);
     canvas.setHeight(window.innerHeight);
 
@@ -104,8 +107,7 @@ export default {
 
     canvas.on("mouse:dblclick", (opt) => {
       if (this.lockPanAndZoom) return;
-
-      if (followingStopped) return;
+      if (this.followingCanvas.isDrawingMode) return;
 
       canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, 1);
 
@@ -124,7 +126,6 @@ export default {
       followingCanvasWrapper.classList.toggle("pointer-events-none");
       followingCanvasWrapper.classList.toggle("origin-top-left");
       followingCanvasWrapper.classList.toggle("transition-[transform]");
-      followingStopped = true;
       followingCanvas.isDrawingMode = true;
 
       if (this.followingRect) return;
@@ -145,8 +146,6 @@ export default {
     });
 
     let canvasSize = 512;
-    let followingStopped = false;
-
     this.followingCanvas = new fabric.Canvas("following-canvas");
     const followingCanvas = this.followingCanvas;
 
@@ -196,13 +195,9 @@ export default {
     window.addEventListener("resize", setCanvasSize.bind(this));
 
     function setCanvasSize() {
-      const canvasWrapper = document.getElementById("canvas-wrapper");
-      const canvasWrapperWidth = canvasWrapper.offsetWidth;
-      const canvasWrapperHeight = canvasWrapper.offsetHeight;
-
       this.canvas.setDimensions({
-        width: canvasWrapperWidth,
-        height: canvasWrapperHeight,
+        width: window.innerWidth,
+        height: window.innerHeight,
       });
     }
 
@@ -342,6 +337,7 @@ export default {
     const canvas = this.canvas;
     const followingCanvas = this.followingCanvas;
     canvas.remove(this.followingRect);
+
     this.followingRect = null;
     this.lockPanAndZoom = true;
 
@@ -493,6 +489,13 @@ export default {
     followingCanvasWrapper.classList.toggle("pointer-events-none");
     followingCanvasWrapper.classList.remove("origin-top-left");
     followingCanvasWrapper.classList.toggle("transition-[transform]");
+  },
+  handleErrorInGeneration() {
+    const rectangles = this.canvas.getObjects("rect");
+    this.canvas.remove(rectangles);
+    this.lockPanAndZoom = false;
+    this.followingCanvas.isDrawingMode = false;
+    this.followingCanvas.clear();
   },
   updated() {
     if (this.followingCanvas.isDrawingMode) {

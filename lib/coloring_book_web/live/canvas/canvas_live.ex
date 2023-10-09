@@ -30,7 +30,7 @@ defmodule ColoringBookWeb.CanvasLive do
       gen_image_prompt(drawing, coords, socket.assigns.canvas_id)
     end)
 
-    {:noreply, socket}
+    {:noreply, socket |> clear_flash() |> put_flash(:generating, "Generating image prompt, this can take up to 5 minutes.")}
   end
 
   @impl true
@@ -39,7 +39,7 @@ defmodule ColoringBookWeb.CanvasLive do
       gen_image(socket.assigns.generation_id)
     end)
 
-    {:noreply, socket}
+    {:noreply, socket |> put_flash(:generating, "Generating image...")}
   end
 
   @impl true
@@ -48,7 +48,7 @@ defmodule ColoringBookWeb.CanvasLive do
       gen_image(socket.assigns.generation_id, image, mask)
     end)
 
-    {:noreply, socket}
+    {:noreply, socket |> put_flash(:generating, "Generating image...")}
   end
 
   @impl true
@@ -78,6 +78,7 @@ defmodule ColoringBookWeb.CanvasLive do
     {:noreply,
       socket
       |> assign(generation_id: generation_id)
+      |> clear_flash()
       |> push_event("generated_image_prompt", %{ prompt: prompt, coords: coords })
     }
   end
@@ -86,19 +87,13 @@ defmodule ColoringBookWeb.CanvasLive do
   def handle_info({ref, %{image: image, coords: coords}}, socket) do
     Process.demonitor(ref, [:flush])
 
-    {:noreply, push_event(socket, "generated_image", %{ image: image, coords: coords })}
-  end
-
-  @impl true
-  def handle_info({ref, %{image: image}}, socket) do
-    Process.demonitor(ref, [:flush])
-
-    {:noreply, push_event(socket, "generated_image", %{ image: image })}
-  end
-
-  @impl true
-  def handle_info({ref, %{image: nil}}, socket) do
-    Process.demonitor(ref, [:flush])
+    case image do
+      nil ->
+        Artwork.Generation.get_by_id!(socket.assigns.generation_id) |> Artwork.Generation.delete!()
+        {:noreply, socket |> clear_flash() |> put_flash(:error, "Couldn't generate an image, please try again!") |> push_event("error_in_generation", %{})}
+      _ ->
+        {:noreply, socket |> clear_flash() |> put_flash(:info, "Image generated") |> push_event("generated_image", %{ image: image, coords: coords })}
+    end
   end
 
   defp gen_image_prompt(drawing, coords, canvas_id) do

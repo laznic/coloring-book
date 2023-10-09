@@ -13,11 +13,12 @@ defmodule ColoringBook.Artwork.Generation do
     define :create, action: :create
     define :read, action: :read
     define :update, action: :update
+    define :delete, action: :destroy
     define :get_by_id, action: :read, get_by: [:id], get?: true
   end
 
   actions do
-    defaults [:read, :create, :update]
+    defaults [:read, :create, :update, :destroy]
   end
 
   attributes do
