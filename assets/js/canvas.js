@@ -31,6 +31,7 @@ export default {
     );
 
     this.handleEvent("accepted_drawing", this.handleAcceptedDrawing.bind(this));
+    this.handleEvent("theme_changed", this.handleThemeChange.bind(this));
     this.handleEvent(
       "error_in_generation",
       this.handleErrorInGeneration.bind(this)
@@ -496,6 +497,10 @@ export default {
     this.lockPanAndZoom = false;
     this.followingCanvas.isDrawingMode = false;
     this.followingCanvas.clear();
+  },
+  handleThemeChange({ theme }) {
+    this.canvas.setBackgroundColor(theme === "dark" ? "#171717" : "#fafafa");
+    this.canvas.requestRenderAll();
   },
   updated() {
     if (this.followingCanvas.isDrawingMode) {

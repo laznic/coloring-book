@@ -9,7 +9,13 @@ defmodule ColoringBookWeb.CanvasLive do
   @sd_api_url "https://api.stability.ai/v1"
 
   def mount(params, _session, socket) do
-    {:ok, socket |> assign(color: "#fff") |> assign(background: "#000") |> assign(no_drawings: true)}
+    {:ok,
+      socket
+      |> assign(color: "#fff")
+      |> assign(background: "#000")
+      |> assign(no_drawings: true)
+      |> assign(theme: "dark")
+    }
   end
 
   @impl true
@@ -69,6 +75,17 @@ defmodule ColoringBookWeb.CanvasLive do
   @impl true
   def handle_event("accept_drawing", _params, socket) do
     {:noreply, socket |> assign(no_drawings: true) |> push_event("accepted_drawing", %{})}
+  end
+
+  @impl true
+  def handle_event("change_theme", _params, socket) do
+    theme = if socket.assigns.theme == "dark" do
+      "light"
+    else
+      "dark"
+    end
+
+    {:noreply, socket |> assign(theme: theme) |> push_event("theme_changed", %{ theme: theme })}
   end
 
   @impl true

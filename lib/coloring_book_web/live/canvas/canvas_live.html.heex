@@ -13,7 +13,7 @@
     <section class="grid grid-cols-4 gap-2 items-center">
       <%= for color <- ["#fff", "#000", "#6b7280", "#ef4444", "#f97316", "#f59e0b", "#facc15", "#713f12", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"] do %>
         <button class={"rounded-full flex items-center justify-center w-8 h-8 #{if color === "#fff", do: "ring-2 ring-neutral-300 w-7 h-7"}"} style={"background: #{color};"} phx-click="select_color" phx-value-color={color}>
-          <%= if color === @color do %>
+          <%= if color == @color do %>
             <span class={"block w-5 h-5 rounded-full bg-white #{if color === "#fff", do: "bg-black"}"}></span>
           <% end %>
         </button>
@@ -25,13 +25,18 @@
     <section class="grid grid-cols-4 gap-2 items-center">
       <%= for color <- ["#fff", "#000", "#6b7280", "#ef4444", "#f97316", "#f59e0b", "#facc15", "#713f12", "#84cc16", "#22c55e", "#10b981", "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"] do %>
         <button class={"rounded-full flex items-center justify-center w-8 h-8 #{if color === "#fff", do: "ring-2 ring-neutral-300 w-7 h-7"}"} style={"background: #{color};"} phx-click="select_background_color" phx-value-background={color}>
-          <%= if color === @background do %>
+          <%= if color == @background do %>
             <span class={"block w-5 h-5 rounded-full bg-white #{if color === "#fff", do: "bg-black"}"}></span>
           <% end %>
         </button>
       <% end %>
     </section>
   </article>
+
+  <button class="bg-white shadow-xl text-neutral-900 rounded-full p-2 cursor-pointer" phx-click="change_theme">
+    <svg :if={@theme == "light"} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    <svg :if={@theme == "dark"} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+  </button>
 
   <button class="bg-white shadow-xl text-neutral-900 rounded-full p-2 cursor-pointer" phx-click={JS.toggle(to: "#brush") |> JS.hide(to: "#background")}>
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paintbrush-2"><path d="M14 19.9V16h3a2 2 0 0 0 2-2v-2H5v2c0 1.1.9 2 2 2h3v3.9a2 2 0 1 0 4 0Z"/><path d="M6 12V2h12v10"/><path d="M14 2v4"/><path d="M10 2v2"/></svg>
@@ -44,4 +49,5 @@
   <button class={"bg-emerald-100 shadow-xl text-emerald-700 rounded-full p-2 cursor-pointer #{if @no_drawings, do: "cursor-not-allowed"}"} phx-click="accept_drawing" disabled={@no_drawings} aria-disabled={@no_drawings}>
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><polyline points="20 6 9 17 4 12"/></svg>
   </button>
+
 </section>
