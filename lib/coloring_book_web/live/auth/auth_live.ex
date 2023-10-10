@@ -48,7 +48,7 @@ defmodule ColoringBookWeb.AuthLive.Index do
       <div class="bg-neutral-900 w-80 p-8 rounded-md mx-auto text-center">
         <h1 class="text-4xl text-white font-black"><%= @cta %></h1>
         <p class="text-white mb-4">
-          <a href={@alternative_path}><%= @alternative %></a>
+          <a href={@alternative_path} class="underline"><%= @alternative %></a>
         </p>
 
         <.live_component
