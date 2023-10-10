@@ -5,8 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <.live_title>
-      <%= assigns[:page_title] || "Coloring Book" %>
+      <%= assigns[:page_title] || "Maicanvas" %>
     </.live_title>
+
+    <meta name="title" content="Maicanvas" />
+    <meta name="description" content="AI powered coloring book" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://maicanvas.com" />
+    <meta property="og:title" content="Maicanvas" />
+    <meta
+      property="og:description"
+      content="AI powered coloring book"
+    />
+    <meta property="og:image" content={~p"/assets/images/share-img.png"} />
+
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://maicanvas.com" />
+    <meta
+      property="twitter:title"
+      content="Maicanvas"
+    />
+    <meta
+      property="twitter:description"
+      content="AI powered coloring book"
+    />
+    <meta property="twitter:image" content={~p"/assets/images/share-img.png"} />
 
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
