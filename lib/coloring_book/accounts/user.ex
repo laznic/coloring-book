@@ -15,6 +15,7 @@ defmodule ColoringBook.Accounts.User do
     strategies do
       password :password do
         identity_field :username
+        confirmation_required? false
         sign_in_tokens_enabled? false
       end
     end

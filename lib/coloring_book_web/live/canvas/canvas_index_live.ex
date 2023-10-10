@@ -12,7 +12,7 @@ defmodule ColoringBookWeb.CanvasIndexLive do
         {:ok, socket |> Phoenix.LiveView.redirect(to: ~p"/canvas/#{canvas.id}")}
       _ ->
         canvas = Artwork.Canvas.create!(%{user_id: current_user.id})
-        {:ok, socket |> Phoenix.LiveView.redirect(sto: ~p"/canvas/#{canvas.id}")}
+        {:ok, socket |> Phoenix.LiveView.redirect(to: ~p"/canvas/#{canvas.id}")}
     end
   end
 end

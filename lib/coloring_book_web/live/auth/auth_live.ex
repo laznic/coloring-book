@@ -44,25 +44,21 @@ defmodule ColoringBookWeb.AuthLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="auth-page">
-      <div class="container page">
-        <div class="row">
-          <div class="col-md-6 offset-md-3 col-xs-12">
-            <h1 class="text-xs-center"><%= @cta %></h1>
-            <p class="text-xs-center">
-              <a href={@alternative_path}><%= @alternative %></a>
-            </p>
+    <div class="w-full h-[100vh] flex items-center justify-center">
+      <div class="bg-neutral-900 w-80 p-8 rounded-md mx-auto text-center">
+        <h1 class="text-4xl text-white font-black"><%= @cta %></h1>
+        <p class="text-white mb-4">
+          <a href={@alternative_path}><%= @alternative %></a>
+        </p>
 
-            <.live_component
-              module={ColoringBookWeb.AuthLive.AuthForm}
-              id={@form_id}
-              form={@form}
-              is_register?={@live_action == :register}
-              action={@action}
-              cta={@cta}
-            />
-          </div>
-        </div>
+        <.live_component
+          module={ColoringBookWeb.AuthLive.AuthForm}
+          id={@form_id}
+          form={@form}
+          is_register?={@live_action == :register}
+          action={@action}
+          cta={@cta}
+        />
       </div>
     </div>
     """

@@ -37,7 +37,7 @@ defmodule ColoringBookWeb.AuthLive.AuthForm do
   def render(assigns) do
     ~H"""
     <div>
-      <ul class="error-messages">
+      <ul class="text-red-500">
         <%= if @form.errors do %>
           <%= for {k, v} <- @errors do %>
             <li>
@@ -58,17 +58,17 @@ defmodule ColoringBookWeb.AuthLive.AuthForm do
       >
         <fieldset class="form-group">
           <%= text_input(f, :username,
-            class: "form-control form-control-lg",
+            class: "form-control rounded-md",
             placeholder: "Username"
           ) %>
         </fieldset>
         <fieldset class="form-group">
           <%= password_input(f, :password,
-            class: "form-control form-control-lg",
+            class: "form-control rounded-md",
             placeholder: "Password"
           ) %>
         </fieldset>
-        <%= submit(@cta, class: "btn btn-lg btn-primary pull-xs-right") %>
+        <%= submit(@cta, class: "mt-4 bg-yellow-500 text-yellow-950 font-bold px-4 py-2 rounded border border-amber-200 shadow-lg text-center transition-all focus:-translate-y-[2px] focus:bg-yellow-400 focus:border-amber-100 focus:shadow-xl hover:-translate-y-[2px] hover:bg-yellow-400 hover:border-amber-100 hover:shadow-xl") %>
       </.form>
     </div>
     """
