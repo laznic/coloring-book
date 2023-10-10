@@ -15,8 +15,8 @@ defmodule ColoringBookWeb.CanvasLive do
       |> assign(background: "#fff")
       |> assign(no_drawings: true)
       |> assign(theme: "dark")
-      |> push_event("selected_color", %{ color: "#000" })
-      |> push_event("selected_background_color", %{ color: "#fff" })
+      |> push_event("selected_color_#{params["id"]}", %{ color: "#000" })
+      |> push_event("selected_background_color_#{params["id"]}", %{ color: "#fff" })
     }
   end
 
@@ -29,7 +29,7 @@ defmodule ColoringBookWeb.CanvasLive do
      socket
      |> assign(:canvas_id, canvas.id)
      |> assign(:show_info_modal, Enum.empty?(generations))
-     |> push_event("render_initial_generations", %{ generations: generations })
+     |> push_event("render_initial_generations_#{canvas.id}", %{ generations: generations })
     }
   end
 
@@ -62,12 +62,12 @@ defmodule ColoringBookWeb.CanvasLive do
 
   @impl true
   def handle_event("select_color", %{"color" => color}, socket) do
-    {:noreply, socket |> assign(color: color) |> push_event("selected_color", %{ color: color })}
+    {:noreply, socket |> assign(color: color) |> push_event("selected_color_#{socket.assigns.canvas_id}", %{ color: color })}
   end
 
   @impl true
   def handle_event("select_background_color", %{"background" => background}, socket) do
-    {:noreply, socket |> assign(background: background) |> push_event("selected_background_color", %{ color: background })}
+    {:noreply, socket |> assign(background: background) |> push_event("selected_background_color_#{socket.assigns.canvas_id}", %{ color: background })}
   end
 
   @impl true
@@ -77,7 +77,7 @@ defmodule ColoringBookWeb.CanvasLive do
 
   @impl true
   def handle_event("accept_drawing", _params, socket) do
-    {:noreply, socket |> assign(no_drawings: true) |> push_event("accepted_drawing", %{})}
+    {:noreply, socket |> assign(no_drawings: true) |> push_event("accepted_drawing_#{socket.assigns.canvas_id}", %{})}
   end
 
   @impl true
@@ -88,7 +88,7 @@ defmodule ColoringBookWeb.CanvasLive do
       "dark"
     end
 
-    {:noreply, socket |> assign(theme: theme) |> push_event("theme_changed", %{ theme: theme })}
+    {:noreply, socket |> assign(theme: theme) |> push_event("theme_changed_#{socket.assigns.canvas_id}", %{ theme: theme })}
   end
 
   @impl true
@@ -104,7 +104,7 @@ defmodule ColoringBookWeb.CanvasLive do
       socket
       |> assign(generation_id: generation_id)
       |> clear_flash()
-      |> push_event("generated_image_prompt", %{ prompt: prompt, coords: coords })
+      |> push_event("generated_image_prompt_#{socket.assigns.canvas_id}", %{ prompt: prompt, coords: coords })
     }
   end
 
@@ -115,9 +115,9 @@ defmodule ColoringBookWeb.CanvasLive do
     case image do
       nil ->
         Artwork.Generation.get_by_id!(socket.assigns.generation_id) |> Artwork.Generation.delete!()
-        {:noreply, socket |> clear_flash() |> put_flash(:error, "Couldn't generate an image, please try again!") |> push_event("error_in_generation", %{})}
+        {:noreply, socket |> clear_flash() |> put_flash(:error, "Couldn't generate an image, please try again!") |> push_event("error_in_generation_#{socket.assigns.canvas_id}", %{})}
       _ ->
-        {:noreply, socket |> clear_flash() |> put_flash(:info, "Image generated") |> push_event("generated_image", %{ image: image, coords: coords })}
+        {:noreply, socket |> clear_flash() |> put_flash(:info, "Image generated") |> push_event("generated_image_#{socket.assigns.canvas_id}", %{ image: image, coords: coords })}
     end
   end
 

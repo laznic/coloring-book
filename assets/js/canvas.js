@@ -9,31 +9,40 @@ export default {
     this.maskCoords = {};
     this.lockPanAndZoom = false;
     this.currentBackgroundColor = "#000";
-
+    const canvasId = this.el.dataset.canvasId;
     this.handleEvent(
-      "render_initial_generations",
+      `render_initial_generations_${canvasId}`,
       this.renderInitialGenerationsOnCanvas.bind(this)
     );
 
     this.handleEvent(
-      "generated_image_prompt",
+      `generated_image_prompt_${canvasId}`,
       this.handleImagePrompt.bind(this)
     );
     this.handleEvent(
-      "generated_image",
+      `generated_image_${canvasId}`,
       this.renderGeneratedImageOnCanvas.bind(this)
     );
 
-    this.handleEvent("selected_color", this.handleSelectedColor.bind(this));
     this.handleEvent(
-      "selected_background_color",
+      `selected_color_${canvasId}`,
+      this.handleSelectedColor.bind(this)
+    );
+    this.handleEvent(
+      `selected_background_color_${canvasId}`,
       this.handleSelectedBackgroundColor.bind(this)
     );
 
-    this.handleEvent("accepted_drawing", this.handleAcceptedDrawing.bind(this));
-    this.handleEvent("theme_changed", this.handleThemeChange.bind(this));
     this.handleEvent(
-      "error_in_generation",
+      `accepted_drawing_${canvasId}`,
+      this.handleAcceptedDrawing.bind(this)
+    );
+    this.handleEvent(
+      `theme_changed_${canvasId}`,
+      this.handleThemeChange.bind(this)
+    );
+    this.handleEvent(
+      `error_in_generation_${canvasId}`,
       this.handleErrorInGeneration.bind(this)
     );
 
