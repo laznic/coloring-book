@@ -20,7 +20,7 @@ defmodule ColoringBookWeb.AuthLive.Index do
     |> assign(:form_id, "sign-up-form")
     |> assign(:cta, "Sign up")
     |> assign(:alternative_path, ~p"/sign-in")
-    |> assign(:alternative, "Have an account?")
+    |> assign(:alternative, "Login with existing account")
     |> assign(:action, ~p"/auth/user/password/register")
     |> assign(
       :form,
@@ -31,9 +31,9 @@ defmodule ColoringBookWeb.AuthLive.Index do
   defp apply_action(socket, :sign_in, _params) do
     socket
     |> assign(:form_id, "sign-in-form")
-    |> assign(:cta, "Sign in")
+    |> assign(:cta, "Login")
     |> assign(:alternative_path, ~p"/register")
-    |> assign(:alternative, "Need an account?")
+    |> assign(:alternative, "Create an account")
     |> assign(:action, ~p"/auth/user/password/sign_in")
     |> assign(
       :form,
