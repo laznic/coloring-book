@@ -134,10 +134,20 @@ defmodule ColoringBookWeb.CanvasLive do
 
   defp gen_image(generation_id) do
     generation = Artwork.Generation.get_by_id!(generation_id)
-    [image] = Replicate.run(@sd_model, %{ prompt: generation.prompt, width: 1024, height: 1024, negative_prompt: "nsfw, ugly, blurry" })
-    Artwork.Generation.update!(generation, %{ image_url: image })
+    case Replicate.run(@sd_model, %{ prompt: generation.prompt, width: 1024, height: 1024, negative_prompt: "nsfw, ugly, blurry" }) do
+      [image] ->
+        Artwork.Generation.update!(generation, %{ image_url: image })
+        %{image: image, coords: %{ top: generation.top, left: generation.left }}
 
-    %{image: image, coords: %{ top: generation.top, left: generation.left }}
+      [] ->
+        %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+
+      nil ->
+        %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+
+      _ ->
+        %{image: nil, coords: %{ top: generation.top, left: generation.left }}
+    end
   end
 
   defp gen_image(generation_id, base_image, mask) do
