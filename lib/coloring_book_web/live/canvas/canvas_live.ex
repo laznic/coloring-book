@@ -8,28 +8,21 @@ defmodule ColoringBookWeb.CanvasLive do
   @sd_model "stability-ai/sdxl:1bfb924045802467cf8869d96b231a12e6aa994abfe37e337c63a4e49a8c6c41"
   @sd_api_url "https://api.stability.ai/v1"
 
-  def mount(params, _session, socket) do
+  def mount(%{"id" => id}, _session, socket) do
+    canvas = Artwork.Canvas.get_by_id!(id, load: [:generations])
+    generations = canvas.generations |> Enum.map(&%{ prompt: &1.prompt, image_url: &1.image_url, top: &1.top, left: &1.left })
+
     {:ok,
       socket
+      |> assign(:canvas_id, canvas.id)
+      |> assign(:show_info_modal, Enum.empty?(generations))
       |> assign(color: "#000")
       |> assign(background: "#fff")
       |> assign(no_drawings: true)
       |> assign(theme: "dark")
-      |> push_event("selected_color_#{params["id"]}", %{ color: "#000" })
-      |> push_event("selected_background_color_#{params["id"]}", %{ color: "#fff" })
-    }
-  end
-
-  @impl true
-  def handle_params(%{"id" => id}, _, socket) do
-    canvas = Artwork.Canvas.get_by_id!(id, load: [:generations])
-    generations = canvas.generations |> Enum.map(&%{ prompt: &1.prompt, image_url: &1.image_url, top: &1.top, left: &1.left })
-
-    {:noreply,
-     socket
-     |> assign(:canvas_id, canvas.id)
-     |> assign(:show_info_modal, Enum.empty?(generations))
-     |> push_event("render_initial_generations_#{canvas.id}", %{ generations: generations })
+      |> push_event("render_initial_generations_#{canvas.id}", %{ generations: generations })
+      |> push_event("selected_color_#{id}", %{ color: "#000" })
+      |> push_event("selected_background_color_#{id}", %{ color: "#fff" })
     }
   end
 
